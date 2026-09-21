@@ -1,0 +1,9 @@
+{
+  "jsp_id": "JSP-000314",
+  "catalog_url": "https://github.com/TheJustinSunPrize/awards/blob/main/problems/catalog-0301-0400.md#JSP-000314",
+  "original_question_en": "How many starting points make the largest prime factor repeat in a product of consecutive integers, and what is their density?",
+  "required_theorems": [
+    "bad_interval_count_asymptotic"
+  ],
+  "notes": "Full Ta26c asymptotic for B(x); Tao's observation / lower-order bounds alone are not prize_ready."
+}

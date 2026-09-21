@@ -1,0 +1,21 @@
+jsp_id: JSP-000314
+catalog_url: https://github.com/TheJustinSunPrize/awards/blob/main/problems/catalog-0301-0400.md#JSP-000314
+status: wip
+prize_ready: false
+github_owner: Yi-111-a
+lean_repository: https://github.com/Yi-111-a/jsp-000314-consecutive-products
+branch: main
+commit_sha: ""
+headline_theorems:
+  - bad_interval_count_asymptotic
+roles:
+  formalization_operators:
+    - Yi-111-a
+  mathematical_solvers_literature:
+    - "Tao (Ta26c), arXiv:2603.27990 (2026) — full resolution"
+attribution_basis: |
+  Formalization work under GitHub account Yi-111-a. Mathematical solution
+  credits remain with the published literature. This stub does not claim the prize.
+build:
+  toolchain_file: lean/lean-toolchain
+  command: lake build
