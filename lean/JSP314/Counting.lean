@@ -54,9 +54,9 @@ theorem badSingletonCount_ge_primeCounting (x : ℕ) :
   · intro p hp
     rw [Finset.mem_coe, Nat.mem_primesLE] at hp
     obtain ⟨hple, hpp⟩ := hp
-    have hpsq : p ^ 2 ≤ x :=
-      le_trans (Nat.pow_le_pow_left hple 2) (Nat.sqrt_le' x)
-    refine Finset.mem_coe.mpr (Finset.mem_filter.mpr ⟨Finset.mem_range.mpr (by omega), ?_⟩)
+    have hpsq : p ^ 2 ≤ x := Nat.le_sqrt'.mp hple
+    refine Finset.mem_coe.mpr (Finset.mem_filter.mpr
+      ⟨Finset.mem_range.mpr (by show p ^ 2 < x + 1; omega), ?_⟩)
     exact prime_sq_mem_badSingleton p hpp
   · intro a _ b _ hab
     exact Nat.pow_left_injective two_ne_zero hab

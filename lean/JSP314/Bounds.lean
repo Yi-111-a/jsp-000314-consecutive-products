@@ -14,24 +14,16 @@ This file proves the easy comparison facts:
 * real-valued versions of the above bounds;
 * a lower bound on `badSingletonCount` in terms of prime squares
   (`badSingletonCount_ge_prime_sq`), using the auxiliary fact
-  `largestPrimeFactor_prime_sq : largestPrimeFactor (p^2) = p`.
+  `largestPrimeFactor_prime_sq_self : largestPrimeFactor (p^2) = p`.
 -/
 
 namespace JSP314
 
+open Classical
+
 /-- The product over a singleton interval `[n, n]` is `n` itself. -/
 private theorem prod_Icc_self_eq (n : ℕ) : (Finset.Icc n n).prod id = n := by
-  rw [Finset.Icc_self, Finset.prod_singleton]
-
-/-- The largest prime factor of `p^2` (p prime) is `p`. -/
-theorem largestPrimeFactor_prime_sq {p : ℕ} (hp : Nat.Prime p) :
-    largestPrimeFactor (p ^ 2) = p := by
-  have h2 : 2 ≤ p ^ 2 :=
-    le_trans (by norm_num) (Nat.pow_le_pow_left hp.two_le 2)
-  apply le_antisymm
-  · exact Nat.le_of_dvd hp.pos
-      ((largestPrimeFactor_prime h2).dvd_of_dvd_pow (largestPrimeFactor_dvd h2))
-  · exact prime_dvd_le_largestPrimeFactor h2 hp (dvd_pow_self p two_ne_zero)
+  simp
 
 /-- A degenerate interval `[n, n]` is bad iff `1 < n` and `P(n)^2 ∣ n`. -/
 theorem isBadInterval_self_iff {n : ℕ} :
@@ -46,8 +38,7 @@ theorem isBadInterval_self_iff {n : ℕ} :
   · rintro ⟨hP, hdiv⟩
     refine ⟨?_, hdiv⟩
     by_contra h1
-    push_neg at h1
-    exact hP (largestPrimeFactor_eq_one_iff.mpr h1)
+    exact hP (largestPrimeFactor_eq_one_iff.mpr (not_lt.mp h1))
   · rintro ⟨h1, hdiv⟩
     exact ⟨fun hP => absurd (largestPrimeFactor_eq_one_iff.mp hP) (by omega), hdiv⟩
 
@@ -98,8 +89,9 @@ theorem badSingletonCount_ge_prime_sq (x : ℕ) :
   obtain ⟨hnx, p, hp, rfl, -⟩ := hn
   have h2 : 2 ≤ p ^ 2 :=
     le_trans (by norm_num) (Nat.pow_le_pow_left hp.two_le 2)
-  refine ⟨hnx, lt_of_lt_of_le (by norm_num) h2, ?_⟩
-  rw [largestPrimeFactor_prime_sq hp]
+  have h1 : 1 < p ^ 2 := lt_of_lt_of_le (by norm_num) h2
+  refine ⟨hnx, h1, ?_⟩
+  rw [largestPrimeFactor_prime_sq_self hp]
   exact dvd_refl _
 
 end JSP314
