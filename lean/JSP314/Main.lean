@@ -33,7 +33,7 @@ live in `JSP314/Defs.lean`; elementary bounds (`badSingletonCount_le_B`,
 
 namespace JSP314
 
-open Nat Filter
+open Nat Filter Classical
 
 /-- `n` lies in some bad interval `[u,v]` with `u < v` (length `≥ 2`). -/
 def InNonSingletonBadInterval (n : ℕ) : Prop :=

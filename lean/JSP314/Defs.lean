@@ -16,6 +16,8 @@ together with the basic API for `largestPrimeFactor`.
 
 namespace JSP314
 
+open Classical
+
 /-- The largest prime factor of `n`, with the convention
 `largestPrimeFactor n = 1` when `n ≤ 1`.  Implemented via `Nat.maxPrimeFac`,
 the greatest prime factor from Mathlib (which takes the junk values `0` at `0`
@@ -34,7 +36,9 @@ theorem largestPrimeFactor_eq_one_iff {n : ℕ} : largestPrimeFactor n = 1 ↔ n
   · simp [largestPrimeFactor, hn]
   · have h2 : 2 ≤ n := by omega
     rw [largestPrimeFactor_eq_maxPrimeFac h2]
-    simp [hn, (Nat.prime_maxPrimeFac_of_one_lt (by omega)).ne_one]
+    have hne : Nat.maxPrimeFac n ≠ 1 :=
+      (Nat.prime_maxPrimeFac_of_one_lt h2).ne_one
+    simp [hne, hn]
 
 theorem one_lt_largestPrimeFactor {n : ℕ} (h : 2 ≤ n) : 1 < largestPrimeFactor n := by
   rw [largestPrimeFactor_eq_maxPrimeFac h]
@@ -59,12 +63,13 @@ theorem prime_dvd_le_largestPrimeFactor {n p : ℕ} (hn : 2 ≤ n) (hp : Nat.Pri
 theorem largestPrimeFactor_eq_primeFactors_max' {n : ℕ} (h : 2 ≤ n) :
     largestPrimeFactor n =
       (Nat.primeFactors n).max' (Nat.nonempty_primeFactors.2 (by omega)) := by
-  refine le_antisymm (Finset.le_max' _ ?_) (Finset.max'_le _ ?_)
+  refine le_antisymm (Finset.le_max' _ _ ?_) (Finset.max'_le _ _ _ ?_)
   · rw [Nat.mem_primeFactors]
     exact ⟨largestPrimeFactor_prime h, largestPrimeFactor_dvd h, by omega⟩
   · intro q hq
     obtain ⟨hq1, hq2, -⟩ := Nat.mem_primeFactors.1 hq
     exact prime_dvd_le_largestPrimeFactor h hq1 hq2
+
 
 theorem largestPrimeFactor_prime_sq_self {p : ℕ} (hp : Nat.Prime p) :
     largestPrimeFactor (p ^ 2) = p := by
