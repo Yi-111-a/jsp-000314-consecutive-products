@@ -3,7 +3,7 @@ import Mathlib
 /-!
 # Axiom-free finite verification for Sylvester–Schur
 
-This file replaces the `native_decide` proofs of `sylvesterSchur_check_small`
+This file replaces the native-code `decide` proofs of `sylvesterSchur_check_small`
 and `sylvesterSchur_check_mid` (in `attempts/aux/SylvesterSchur.lean`) by
 kernel-checked proofs.
 

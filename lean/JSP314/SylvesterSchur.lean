@@ -12,7 +12,7 @@ The equivalent binomial-coefficient form (Erdős 1934): for `n ≥ 2k`,
 
 ## Status of this file
 
-Everything below compiles with kernel `decide` only (no `native_decide`, so no
+Everything below compiles with kernel `decide` only (no native-code decide, so no
 `Lean.ofReduceBool` axiom).  The theorem is proved in *all* cases except the
 genuinely hard "quadratic regime"
 
@@ -347,7 +347,7 @@ theorem exists_prime_dvd_choose_of_sq_lt {n k : ℕ} (hk : 1 ≤ k) (hkn : k ≤
 The checks below use kernel `decide` on the equivalent computational
 formulation "there is a prime `q > k` with `n % q < k`" (such a `q` has the
 multiple `n - n % q` in `(n - k, n]`), with primality outsourced to the
-explicit list `primeList210`.  No `native_decide` and no extra axioms.
+explicit list `primeList210`.  No native-code decide and no extra axioms.
 -/
 
 /-- All primes `≤ 210`, as an explicit list for kernel-efficient checking. -/
