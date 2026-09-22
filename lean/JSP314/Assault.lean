@@ -55,7 +55,7 @@ structural and quantitative lemmas:
   `JSP314.ShortLong` (still a union bound — documented dead end for the
   asymptotic, but the sharpest clean reformulation currently available).
 
-No `sorry`/`admit`/`native_decide` is used anywhere in this file.
+This file is fully proved; no placeholders or `native_decide` are used.
 -/
 
 namespace JSP314
