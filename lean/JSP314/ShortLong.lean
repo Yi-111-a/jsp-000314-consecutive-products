@@ -361,6 +361,82 @@ theorem shortBadCount_le (x : ℕ) :
   unfold shortBadCount badSingletonCount
   exact (Finset.card_le_card hsub).trans hcard
 
+/-- The **Sylvester–Schur property** at `(a, L)`: some element of the `L`
+consecutive integers `[a, a + L - 1]` is divisible by a prime `> L`.
+
+This is a classical theorem (Sylvester 1892, Schur 1929, Erdős 1934): the
+product of `L` consecutive integers all exceeding `L` has a prime factor
+exceeding `L`.  It is **not** currently in Mathlib; it is stated here as the
+precise hypothesis under which the *long* case of the dichotomy collapses. -/
+def SylvesterSchur (a L : ℕ) : Prop :=
+  ∃ p : ℕ, p.Prime ∧ L < p ∧
+    ∃ i ∈ Finset.Icc a (a + L - 1), p ∣ i
+
+/-- **Conditional elimination of the long case**: under Sylvester–Schur,
+every non-singleton bad interval is *short* (`v - u < P`).
+
+The squeeze bound `v + 2 ≤ 2u` says exactly `L < u` and `v ≥ 2L` for the
+length `L = v - u + 1` — the exact Sylvester–Schur threshold.  A prime
+`p > L` dividing the interval product forces `P ≥ p > v - u`. -/
+theorem bad_interval_short_of_sylvesterSchur {u v : ℕ}
+    (hss : ∀ a L : ℕ, L < a → SylvesterSchur a L)
+    (hbad : IsBadInterval u v) (huv : u < v) :
+    v - u < largestPrimeFactor ((Finset.Icc u v).prod id) := by
+  have hL : v - u + 1 < u := by
+    have hs := bad_interval_v_add_two_le hbad huv
+    omega
+  obtain ⟨p, hp, hpL, i, hi, hpi⟩ := hss u (v - u + 1) hL
+  have hiv : i ∈ Finset.Icc u v := by
+    have hmem := Finset.mem_Icc.mp hi
+    refine Finset.mem_Icc.mpr ⟨hmem.1, ?_⟩
+    have : u + (v - u + 1) - 1 = v := by omega
+    omega
+  have hprod : p ∣ (Finset.Icc u v).prod id :=
+    dvd_trans hpi (Finset.dvd_prod_of_mem id hiv)
+  have hple : p ≤ largestPrimeFactor ((Finset.Icc u v).prod id) :=
+    prime_dvd_le_largestPrimeFactor (bad_interval_prod_ge_two hbad) hp hprod
+  omega
+
+/-- Under Sylvester–Schur, no point is covered by a long bad interval. -/
+theorem not_inLongBadInterval_of_sylvesterSchur
+    (hss : ∀ a L : ℕ, L < a → SylvesterSchur a L) {n : ℕ} :
+    ¬ InLongBadInterval n := by
+  rintro ⟨u, v, huv, hbad, hun, hnv, hlong⟩
+  have := bad_interval_short_of_sylvesterSchur hss hbad huv
+  omega
+
+/-- Under Sylvester–Schur, the non-singleton bad count is bounded by the
+short component alone: `N(x) ≤ T_short(x)`. -/
+theorem badNonSingletonCount_le_short_of_sylvesterSchur
+    (hss : ∀ a L : ℕ, L < a → SylvesterSchur a L) (x : ℕ) :
+    badNonSingletonCount x ≤ shortBadCount x := by
+  unfold badNonSingletonCount shortBadCount
+  refine Finset.card_le_card ?_
+  intro n hn
+  simp only [Finset.mem_filter, Finset.mem_range] at hn ⊢
+  obtain ⟨hnx, hnbad⟩ := hn
+  refine ⟨hnx, ?_⟩
+  obtain ⟨u, v, huv, hbad, hun, hnv⟩ := hnbad
+  exact ⟨u, v, huv, hbad, hun, hnv,
+    bad_interval_short_of_sylvesterSchur hss hbad huv⟩
+
+/-- **Master conditional reduction**: the Sylvester–Schur theorem plus the
+short-interval estimate `T_short(x) ≤ (log x)^{-1+ε} · S(x)` imply the
+residual analytic bound `badNonSingleton_interval_bound`. -/
+theorem badNonSingleton_interval_bound_of_sylvesterSchur_short
+    (hss : ∀ a L : ℕ, L < a → SylvesterSchur a L)
+    (h : ∀ ε : ℝ, 0 < ε → ∀ᶠ x : ℕ in Filter.atTop,
+      (shortBadCount x : ℝ) ≤
+        (Real.log x) ^ (-(1 - ε)) * (badSingletonCount x : ℝ)) :
+    ∀ ε : ℝ, 0 < ε → ∀ᶠ x : ℕ in Filter.atTop,
+      (badNonSingletonCount x : ℝ) ≤
+        (Real.log x) ^ (-(1 - ε)) * (badSingletonCount x : ℝ) := by
+  intro ε hε
+  filter_upwards [h ε hε] with x hx
+  have hN : (badNonSingletonCount x : ℝ) ≤ (shortBadCount x : ℝ) := by
+    exact_mod_cast badNonSingletonCount_le_short_of_sylvesterSchur hss x
+  linarith
+
 /-- The residual analytic bound of Ta26c follows from the same bound on the
 two components: if `T_short(x) + T_run(x) ≤ (log x)^{-1+ε} · S(x)`
 eventually for every `ε > 0`, then `N(x) ≤ (log x)^{-1+ε} · S(x)`
