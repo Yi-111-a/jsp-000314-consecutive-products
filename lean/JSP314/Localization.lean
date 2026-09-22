@@ -1,5 +1,7 @@
 import JSP314.Defs
-import Mathlib
+import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
+import Mathlib.Tactic.ByContra
+import Mathlib.Tactic.Push
 
 /-!
 # JSP-000314 — the localization lemma

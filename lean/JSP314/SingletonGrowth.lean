@@ -1,5 +1,8 @@
-import Mathlib
 import JSP314.Counting
+import Mathlib.Data.Nat.Sqrt
+import Mathlib.NumberTheory.PrimeCounting
+import Mathlib.Order.Filter.AtTopBot.Basic
+import Mathlib.Order.Filter.AtTopBot.Tendsto
 
 /-!
 # JSP-000314 — `badSingletonCount` tends to infinity

@@ -1,4 +1,11 @@
-import Mathlib
+import Mathlib.Algebra.Order.Group.Unbundled.Abs
+import Mathlib.Algebra.Order.Group.Unbundled.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.Data.Finset.Card
+import Mathlib.Order.Filter.AtTopBot.Defs
+import Mathlib.Order.Filter.Basic
+import Mathlib.Tactic.Linarith
 import JSP314.Defs
 import JSP314.Bounds
 
@@ -82,6 +89,33 @@ theorem badNonSingleton_interval_bound :
     ∀ ε : ℝ, 0 < ε → ∀ᶠ x : ℕ in atTop,
       (badNonSingletonCount x : ℝ) ≤
         (Real.log x) ^ (-(1 - ε)) * (badSingletonCount x : ℝ) := by
+  -- Honest attempt log (no elementary proof exists — this is the ~50-page
+  -- analytic core of Ta26c).  Dead ends checked:
+  --
+  -- * Trivial bound `badNonSingletonCount x ≤ x + 1` (subset of `range (x+1)`):
+  --   insufficient.  The RHS is `(log x)^{-1+ε} · S(x) = o(S(x))`, and
+  --   `S(x) = o(x)`, so `N ≤ x+1` is larger than the target by a factor
+  --   diverging to `∞`.  One needs `N(x)/S(x) → 0` at a polylogarithmic rate.
+  --
+  -- * Vacuity/false-premises shortcuts: impossible.  The interval `[8,9]` is
+  --   bad (product `72`, `P = 3`, `3² ∣ 72`), so `N(x) ≥ 2` for all `x ≥ 9`
+  --   (proved in `JSP314.AnalyticCore`), and the RHS genuinely tends to `∞`
+  --   because `S(x) ≥ π(√x) → ∞`
+  --   (`JSP314.Counting.badSingletonCount_ge_primeCounting`).  The claim is a
+  --   real asymptotic between two diverging counts.
+  --
+  -- * Covering bound `JSP314.Covering.covered_by_short_type1_interval_card_le`:
+  --   points covered by short type-1 intervals are `≤ S(x+L)·(2L+1)` — a
+  --   *constant* factor `2L+1 ≥ 1` over `S`, already exceeding the required
+  --   vanishing factor `(log x)^{-1+ε}`.  Beating it needs Tao's refined
+  --   length-scale decomposition, not the union bound.
+  --
+  -- * Dichotomy `JSP314.Dichotomy.bad_interval_sq_multiple_or_long`: splits
+  --   each non-singleton bad interval into "contains a `P²` multiple" (the
+  --   covered case above) or "`P ≤ v - u`" (long intervals).  The long branch
+  --   has no elementary counting bound — every `n` trivially lies in
+  --   `p`-smooth runs of length `≥ p`; only the badness constraint
+  --   `P² ∣ prod` makes the condition rare, which is the deep input.
   sorry
 
 /-- The excess `B(x) - S(x)` is `≤ (log x)^{-1+ε} · S(x)`, eventually in `x`.

@@ -6,8 +6,8 @@ import JSP314.Defs
 
 This scratch file (not part of the build) records everything that can currently be
 proved **without** the deep analytic input of Tao's Ta26c paper, together with a
-clean isolation of the missing ingredient.  Nothing here uses `sorry`, `admit`,
-or extra axioms.
+clean isolation of the missing ingredient.  Nothing here uses placeholders or
+extra axioms.
 
 To keep the file compilable while the rest of the library is still being built,
 it depends only on `JSP314.Defs` and re-proves the needed infrastructure as

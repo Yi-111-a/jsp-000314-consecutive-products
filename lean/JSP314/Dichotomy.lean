@@ -1,5 +1,10 @@
-import Mathlib
 import JSP314.Defs
+import Mathlib.Algebra.BigOperators.Associated
+import Mathlib.Algebra.GroupWithZero.Divisibility
+import Mathlib.Data.Finset.Erase
+import Mathlib.Tactic.ByContra
+import Mathlib.Tactic.Push
+import Mathlib.Tactic.Ring
 
 /-!
 # JSP-000314 — the interval dichotomy

@@ -1,5 +1,9 @@
-import Mathlib
 import JSP314.Defs
+import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
+import Mathlib.Algebra.Order.BigOperators.Group.Finset
+import Mathlib.Data.Finset.Union
+import Mathlib.Tactic.ByContra
+import Mathlib.Tactic.Push
 
 /-!
 # JSP-000314 — a finite covering bound for short type-1 bad intervals
