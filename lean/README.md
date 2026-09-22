@@ -22,13 +22,21 @@ lake build
 - `JSP314/Defs.lean` — `largestPrimeFactor`, `IsBadInterval`, `B`,
   `badSingletonCount` and the `largestPrimeFactor` API.
 - `JSP314/Bounds.lean` — elementary comparisons `S(x) ≤ B(x) ≤ x+1`.
-- `JSP314/ProdLPF.lean` — `P(∏_{i=u}^{v} i) = max_{i ∈ [u,v]} P(i)`.
-- `JSP314/Localization.lean` — a `P²`-multiple inside a bad interval is a
-  bad singleton; every interval point is within `v - u` of it.
-- `JSP314/Counting.lean` — `π(√x) ≤ S(x)` via prime squares.
+- `JSP314/Squeeze.lean` — every non-singleton bad interval satisfies
+  `v + 2 ≤ 2u` (Bertrand's postulate: a prime in `(v/2, v]` lies in the
+  interval and occurs to the first power only).
+- `JSP314/Type2Run.lean` — type-2 dichotomy branch: if no element of a bad
+  `[u,v]` is divisible by `P²`, then `P` divides two distinct elements,
+  hence `P ≤ v - u`; every element is `P`-smooth.
 - `JSP314/Main.lean` — headline `bad_interval_count_asymptotic`, proved
   modulo the single analytic core lemma `badNonSingleton_interval_bound`
   (the deep content of Ta26c).
+
+The `attempts/` tree holds auxiliary development files (not part of the
+default target): `aux/ProdLPF.lean` (`P(∏_{i=u}^{v} i) = max_i P(i)`),
+`aux/Localization.lean` (a `P²`-multiple in a bad interval is a bad
+singleton), `aux/Counting.lean` (`π(√x) ≤ S(x)`), `aux/SylvesterSchur.lean`,
+`aux/TypeIBound.lean`, `aux/TypeIIEmpty.lean`, and related scratch work.
 
 ## Headline theorem
 
