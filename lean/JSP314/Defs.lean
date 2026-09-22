@@ -1,4 +1,10 @@
-import Mathlib
+import Mathlib.Data.Nat.MaxPrimeFac
+import Mathlib.Data.Finset.Max
+import Mathlib.Data.Finset.Filter
+import Mathlib.Data.Finset.Range
+import Mathlib.Order.Interval.Finset.Nat
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Algebra.Order.GroupWithZero.Basic
 
 /-!
 # JSP-000314 definitions
