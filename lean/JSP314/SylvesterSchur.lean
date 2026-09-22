@@ -70,6 +70,7 @@ import Mathlib.NumberTheory.Primorial
 namespace SylvesterSchur
 
 open Finset
+open scoped Nat
 
 /-!
 ### Transfer: a prime `p > k` divides `C(n,k)` iff it divides some `m ∈ (n - k, n]`
@@ -81,16 +82,18 @@ consecutive factors `n - k + 1, …, n` divided by `k !`, and `p ∤ k !`. -/
 theorem dvd_choose_of_prime_dvd {n k m p : ℕ} (hp : p.Prime) (hk : k < p)
     (hm : m ∈ Finset.Icc (n + 1 - k) n) (hd : p ∣ m) : p ∣ n.choose k := by
   rw [Finset.mem_Icc] at hm
-  have hkn : k ≤ n := by omega
-  have hdvd : m ∣ n.descFactorial k := by
-    rw [Nat.descFactorial_eq_prod_range]
-    have hi : n - m ∈ Finset.range k := Finset.mem_range.2 (by omega)
-    have hmi : n - (n - m) = m := Nat.sub_sub_self hm.2
-    rw [← hmi]
-    exact Finset.dvd_prod_of_mem (fun i => n - i) hi
-  have hd2 : p ∣ k ! * n.choose k :=
-    Nat.descFactorial_eq_factorial_mul_choose n k ▸ hd.trans hdvd
-  exact (hp.coprime_factorial_of_lt hk).dvd_of_dvd_mul_left hd2
+  rcases lt_or_ge n k with hnk | hkn
+  · rw [Nat.choose_eq_zero_of_lt hnk]
+    exact dvd_zero p
+  · have hdvd : m ∣ n.descFactorial k := by
+      rw [Nat.descFactorial_eq_prod_range]
+      have hi : n - m ∈ Finset.range k := Finset.mem_range.2 (by omega)
+      have hmi : n - (n - m) = m := Nat.sub_sub_self hm.2
+      rw [← hmi]
+      exact Finset.dvd_prod_of_mem (fun i => n - i) hi
+    have hd2 : p ∣ k ! * n.choose k :=
+      Nat.descFactorial_eq_factorial_mul_choose n k ▸ hd.trans hdvd
+    exact (hp.coprime_factorial_of_lt hk).dvd_of_dvd_mul_left hd2
 
 /-- Conversely, if a prime `p > k` divides `n.choose k`, it divides one of the top
 factors `m ∈ (n - k, n]` — the Sylvester–Schur statement is equivalent to
@@ -160,7 +163,7 @@ theorem pow_le_pow_mul_choose {n k : ℕ} (hkn : k ≤ n) :
     n ^ k ≤ k ^ k * n.choose k := by
   have hfactor : ∀ i ∈ Finset.range k, n * (k - i) ≤ k * (n - i) := by
     intro i _
-    have h' : k * i ≤ n * i := mul_le_mul_right' hkn i
+    have h' : k * i ≤ n * i := mul_le_mul_left hkn i
     calc n * (k - i) = n * k - n * i := Nat.mul_sub _ _ _
       _ = k * n - n * i := by rw [Nat.mul_comm n k]
       _ ≤ k * n - k * i := Nat.sub_le_sub_left h' _
@@ -175,7 +178,7 @@ theorem pow_le_pow_mul_choose {n k : ℕ} (hkn : k ≤ n) :
   have h4 : n ^ k * k ! ≤ (k ^ k * n.choose k) * k ! := by
     calc n ^ k * k ! = ∏ i ∈ Finset.range k, n * (k - i) := h3.symm
       _ ≤ ∏ i ∈ Finset.range k, k * (n - i) :=
-          Finset.prod_le_prod (fun i _ => Nat.zero_le _) hfactor
+          Finset.prod_le_prod hfactor
       _ = k ^ k * n.descFactorial k := h1.symm
       _ = (k ^ k * n.choose k) * k ! := by
           rw [Nat.descFactorial_eq_factorial_mul_choose]; ring
@@ -208,8 +211,7 @@ theorem choose_le_pow_primeCounting {n k : ℕ} (hn : 0 < n) (hkn : k ≤ n)
             exact hp2 (Nat.mem_primesLE.mpr
               ⟨h p hpprime (Nat.dvd_of_factorization_pos ha), hpprime⟩)
     _ ≤ ∏ p ∈ k.primesLE, n :=
-        Finset.prod_le_prod (fun i _ => Nat.zero_le _)
-          (fun i _ => Nat.pow_factorization_choose_le hn)
+        Finset.prod_le_prod (fun i _ => Nat.pow_factorization_choose_le hn)
     _ = n ^ k.primeCounting := by
         rw [Finset.prod_const, Nat.primesLE_card_eq_primeCounting]
 
@@ -240,9 +242,8 @@ theorem choose_le_prod_pow_log {n k : ℕ} (hkn : k ≤ n)
             exact hp2 (Nat.mem_primesLE.mpr
               ⟨h p hpprime (Nat.dvd_of_factorization_pos ha), hpprime⟩)
     _ ≤ ∏ p ∈ k.primesLE, p ^ p.log n :=
-        Finset.prod_le_prod (fun i _ => Nat.zero_le _)
-          (fun p hp => Nat.pow_le_pow_right
-            (Nat.mem_primesLE.mp hp).2.one_lt.le Nat.factorization_choose_le_log)
+        Finset.prod_le_prod (fun p hp => Nat.pow_le_pow_right
+          (Nat.mem_primesLE.mp hp).2.one_lt.le Nat.factorization_choose_le_log)
 
 /-- The reduced form of the "no large prime factor" hypothesis:
 `n ^ (k - π k) ≤ k ^ k`. -/
@@ -263,15 +264,16 @@ theorem pow_sub_le_of_forall_prime_le {n k : ℕ} (hk : 1 ≤ k) (hkn : k ≤ n)
   have h2 : n ^ (k - k.primeCounting) * n ^ k.primeCounting ≤
       k ^ k * n ^ k.primeCounting := by
     rw [← pow_add, e]
-    exact hb.trans (mul_le_mul_left' hc _)
+    exact hb.trans (mul_le_mul_right hc _)
   exact le_of_mul_le_mul_right h2 (pow_pos hn0 _)
 
-/-- If `n ^ e ≤ C < B ^ e` with `e > 0`, then `n < B`. -/
+/-- If `n ^ e ≤ C < B ^ e` with `e > 0`, then `n < B`, i.e. `n ≤ B - 1`. -/
 theorem lt_of_pow_le {n e C B : ℕ} (he : 0 < e) (h : n ^ e ≤ C) (hB : C < B ^ e) :
-    n < B := by
+    n ≤ B - 1 := by
   by_contra hn
   push_neg at hn
-  have : B ^ e ≤ n ^ e := Nat.pow_le_pow_left hn _
+  have hBn : B ≤ n := by omega
+  have : B ^ e ≤ n ^ e := Nat.pow_le_pow_left hBn _
   omega
 
 /-- For `k ≥ 8`, `2 * π k ≤ k` (mod-6 sieve via `Nat.primeCounting_add_le`,
@@ -356,18 +358,19 @@ def primeList210 : List ℕ :=
    73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151,
    157, 163, 167, 173, 179, 181, 191, 193, 197, 199]
 
+set_option maxRecDepth 10000 in
 /-- Every element of `primeList210` is prime (kernel `decide`). -/
 theorem primeList210_prime : ∀ q ∈ primeList210, q.Prime := by decide
 
-/-- Finite check, `k ≤ 7`, `n ≤ 93` (kernel `decide`). -/
 set_option maxRecDepth 10000 in
+/-- Finite check, `k ≤ 7`, `n ≤ 93` (kernel `decide`). -/
 theorem check_small :
     ∀ n ∈ Finset.Icc 2 93, ∀ k ∈ Finset.Icc 1 7,
       2 * k ≤ n → ∃ q ∈ primeList210, k < q ∧ n % q < k := by
   decide
 
-/-- Finite check, `8 ≤ k ≤ 37`, `n ≤ 210` (kernel `decide`). -/
 set_option maxRecDepth 10000 in
+/-- Finite check, `8 ≤ k ≤ 37`, `n ≤ 210` (kernel `decide`). -/
 theorem check_mid :
     ∀ n ∈ Finset.Icc 16 210, ∀ k ∈ Finset.Icc 8 37,
       2 * k ≤ n → ∃ q ∈ primeList210, k < q ∧ n % q < k := by
@@ -420,28 +423,26 @@ theorem exists_prime_dvd_choose
   have hkn : k ≤ n := by omega
   rcases lt_or_ge n (2 * k + 2) with hn | hn
   · exact exists_prime_dvd_choose_of_le hk h (by omega)
-  · rcases lt_or_ge k 38 with hk38 | hk37
-    · rcases lt_or_ge (k ^ 2) n with hsq | hsq
+  · rcases le_or_gt 38 k with hk38 | hk37
+    · rcases le_or_gt n (k ^ 2) with hsq | hsq
       · -- `38 ≤ k`, `2k + 2 ≤ n ≤ k ^ 2`: the residual quadratic regime.
         exact hquad n k ⟨hk38, hn, hsq⟩
       · exact exists_prime_dvd_choose_of_sq_lt hk hkn
           (two_mul_primeCounting_le (by omega)) (by omega)
-    · rcases Nat.lt_or_ge n 211 with hn211 | hn211
-      · rcases lt_or_ge k 8 with hk8 | hk8
-        · exact exists_prime_dvd_choose_small hk (by omega) h (by omega)
-        · exact exists_prime_dvd_choose_mid hk hk8 (by omega) h (by omega)
-      · -- `n ≥ 211`, `k ≤ 37`: the analytic bound forces `n ≤ 210` (or
-        -- `n ≤ 93` for `k ≤ 7`), a contradiction unless a large prime
-        -- divides `C(n,k)`.
-        by_contra hcon
-        push_neg at hcon
-        have hb := pow_sub_le_of_forall_prime_le hk hkn
-          (fun q hq hqd => le_of_not_gt (fun hqk => hcon q hq hqk hqd))
-        rcases lt_or_ge k 8 with hk8 | hk8
-        · have := le_93_of_small hk (by omega) hb
-          omega
-        · have := le_210_of_mid hk8 (by omega) hb
-          omega
+    · -- `k ≤ 37`: if no large prime divides `C(n,k)`, the analytic bound
+      -- forces `n ≤ 93` (`k ≤ 7`) or `n ≤ 210` (`8 ≤ k ≤ 37`), where the
+      -- finite checks supply a large prime divisor — a contradiction.
+      by_contra hcon
+      push_neg at hcon
+      have hb := pow_sub_le_of_forall_prime_le hk hkn
+        (fun q hq hqd => le_of_not_gt (fun hqk => hcon q hq hqk hqd))
+      rcases lt_or_ge k 8 with hk8 | hk8
+      · obtain ⟨q, hq, hqk, hdvd⟩ := exists_prime_dvd_choose_small hk (by omega) h
+          (le_93_of_small hk (by omega) hb)
+        exact hcon q hq hqk hdvd
+      · obtain ⟨q, hq, hqk, hdvd⟩ := exists_prime_dvd_choose_mid hk hk8 (by omega) h
+          (le_210_of_mid hk8 (by omega) hb)
+        exact hcon q hq hqk hdvd
 
 /-!
 ### Consecutive-integers form (downstream shape)
@@ -464,7 +465,8 @@ theorem exists_prime_mem_Icc_dvd
       ∃ q, q.Prime ∧ k' < q ∧ q ∣ n'.choose k')
     {u P : ℕ} (hP : 1 ≤ P) (hu : P + 1 ≤ u) :
     ∃ m ∈ Finset.Icc u (u + P - 1), ∃ q, q.Prime ∧ P < q ∧ q ∣ m := by
-  obtain ⟨q, hq, hqP, hd⟩ := exists_prime_dvd_choose hquad hP (by omega)
+  obtain ⟨q, hq, hqP, hd⟩ :=
+    exists_prime_dvd_choose (n := u + P - 1) (k := P) hquad hP (by omega)
   obtain ⟨m, hm, hqm⟩ :=
     exists_mem_Icc_of_prime_dvd_choose hq hqP (by omega : P ≤ u + P - 1) hd
   rw [Finset.mem_Icc] at hm
@@ -480,7 +482,7 @@ theorem sylvesterSchur
     {a L : ℕ} (hL : 1 ≤ L) (hLa : L < a) :
     ∃ p : ℕ, p.Prime ∧ L < p ∧ ∃ i ∈ Finset.Icc a (a + L - 1), p ∣ i := by
   obtain ⟨m, hm, q, hq, hqL, hqm⟩ :=
-    exists_prime_mem_Icc_dvd hquad hL (by omega)
+    exists_prime_mem_Icc_dvd (u := a) (P := L) hquad hL (by omega)
   exact ⟨q, hq, hqL, m, hm, hqm⟩
 
 end SylvesterSchur

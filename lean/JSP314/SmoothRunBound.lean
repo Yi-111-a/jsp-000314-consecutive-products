@@ -187,7 +187,7 @@ theorem badNonSingletonCount_le_short_add_compositeRun (x : ℕ) :
 /-- Trivial cardinality bound `smoothRunCoveredCount x ≤ x + 1`. -/
 theorem smoothRunCoveredCount_le (x : ℕ) : smoothRunCoveredCount x ≤ x + 1 := by
   unfold smoothRunCoveredCount
-  refine (Finset.card_le_card (Finset.filter_subset _)).trans ?_
+  refine (Finset.card_le_card (Finset.filter_subset _ _)).trans ?_
   rw [Finset.card_range]
 
 end Counts

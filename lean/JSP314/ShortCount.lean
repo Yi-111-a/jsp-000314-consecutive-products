@@ -73,7 +73,8 @@ theorem card_badSingletonsOfLpf_le (B p : ℕ) :
   · have hp2 : 0 < p ^ 2 := by
       rw [pow_two]
       exact Nat.mul_pos hp0 hp0
-    refine (Finset.card_le_card_of_injOn (fun m => m / p ^ 2) ?_ ?_).trans ?_
+    refine (Finset.card_le_card_of_injOn (t := Finset.Icc 1 (B / p ^ 2))
+      (fun m => m / p ^ 2) ?_ ?_).trans ?_
     · -- MapsTo: `1 ≤ m / p² ≤ B / p²`.
       intro m hm
       rw [Finset.mem_coe, mem_badSingletonsOfLpf] at hm
@@ -100,7 +101,7 @@ theorem card_biUnion_Icc_badSingletonsOfLpf_le (B p : ℕ) :
     ((badSingletonsOfLpf B p).biUnion
         (fun m => Finset.Icc (m - p) (m + p))).card ≤
       (B / p ^ 2) * (2 * p + 1) := by
-  refine (Finset.card_biUnion_le_card_mul _ _ _ ?_).trans ?_
+  refine (Finset.card_biUnion_le_card_mul _ _ (2 * p + 1) ?_).trans ?_
   · intro m _
     exact card_Icc_sub_add_le m p
   · exact Nat.mul_le_mul (card_badSingletonsOfLpf_le B p) le_rfl
