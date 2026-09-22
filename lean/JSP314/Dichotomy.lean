@@ -90,7 +90,11 @@ theorem bad_interval_sq_multiple_or_long {u v : ℕ} (huv : u < v)
         ∣ m1 * ((Finset.Icc u v).erase m1).prod id := by
       rw [← hprod_eq]
       exact hP2
-    rw [ha, pow_two, mul_assoc] at hdvd
+    have hfact : m1 * ((Finset.Icc u v).erase m1).prod id =
+        largestPrimeFactor ((Finset.Icc u v).prod id) *
+          (a * ((Finset.Icc u v).erase m1).prod id) := by
+      rw [ha]; ring
+    rw [hfact, pow_two] at hdvd
     have hPar : largestPrimeFactor ((Finset.Icc u v).prod id)
         ∣ a * ((Finset.Icc u v).erase m1).prod id :=
       (mul_dvd_mul_iff_left hPprime.ne_zero).mp hdvd

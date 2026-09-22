@@ -1,4 +1,6 @@
 import JSP314.Defs
+import Mathlib.Tactic.NormNum
+import Mathlib.NumberTheory.PrimeCounting
 
 /-!
 # JSP-000314 — counting lower bounds for `badSingletonCount`

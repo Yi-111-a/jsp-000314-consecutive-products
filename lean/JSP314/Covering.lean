@@ -54,7 +54,7 @@ private theorem two_le_and_lpf_eq_of_sq_dvd_mem {u v m : ℕ}
     · exact h0
   -- `m ≥ P² ≥ 2`.
   have hm2 : 2 ≤ m :=
-    (one_lt_pow₀ hPprime.one_lt two_ne_zero).le.trans
+    (one_lt_pow₀ hPprime.one_lt two_ne_zero).trans_le
       (Nat.le_of_dvd hmpos hdvd)
   -- `P ∣ m` since `P ∣ P² ∣ m`.
   have hPdvd : largestPrimeFactor ((Finset.Icc u v).prod id) ∣ m :=
@@ -135,7 +135,7 @@ theorem covered_by_short_type1_interval_card_le (x L : ℕ) :
   -- Each covering interval has at most `2L + 1` elements.
   have hIcc_card : ∀ m : ℕ, (Finset.Icc (m - L) (m + L)).card ≤ 2 * L + 1 := by
     intro m
-    rw [Finset.card_Icc]
+    rw [Nat.card_Icc]
     omega
   -- `S.card` is exactly `badSingletonCount (x + L)`.
   have hS_card : S.card = badSingletonCount (x + L) := by

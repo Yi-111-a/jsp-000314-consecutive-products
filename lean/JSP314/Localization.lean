@@ -55,7 +55,7 @@ private theorem two_le_and_lpf_eq_of_sq_dvd_mem {u v m : ℕ}
     · exact h0
   -- `m ≥ P² ≥ 2`.
   have hm2 : 2 ≤ m :=
-    (one_lt_pow₀ hPprime.one_lt two_ne_zero).le.trans
+    (one_lt_pow₀ hPprime.one_lt two_ne_zero).trans_le
       (Nat.le_of_dvd hmpos hdvd)
   -- `P ∣ m` since `P ∣ P² ∣ m`.
   have hPdvd : largestPrimeFactor ((Finset.Icc u v).prod id) ∣ m :=

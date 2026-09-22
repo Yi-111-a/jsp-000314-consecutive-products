@@ -57,8 +57,9 @@ theorem badSingletonCount_le_B (x : ℕ) : badSingletonCount x ≤ B x := by
 /-- `B x` counts a subset of `range (x + 1)`. -/
 theorem B_le (x : ℕ) : B x ≤ x + 1 := by
   show ((Finset.range (x + 1)).filter _).card ≤ x + 1
-  rw [← Finset.card_range (x + 1)]
-  exact Finset.card_le_card (Finset.filter_subset _ _)
+  have h := Finset.card_filter_le (Finset.range (x + 1))
+    (fun n => ∃ u v : ℕ, IsBadInterval u v ∧ u ≤ n ∧ n ≤ v)
+  rwa [Finset.card_range] at h
 
 /-- Real-valued version of `badSingletonCount_le_B`. -/
 theorem badSingletonCount_le_B_real (x : ℕ) :
@@ -97,6 +98,5 @@ theorem badSingletonCount_ge_prime_sq (x : ℕ) :
   have h1 : 1 < p ^ 2 := lt_of_lt_of_le (by norm_num) h2
   refine ⟨hnx, h1, ?_⟩
   rw [largestPrimeFactor_prime_sq_self hp]
-  exact dvd_refl _
 
 end JSP314
