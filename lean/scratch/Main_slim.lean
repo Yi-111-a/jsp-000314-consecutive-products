@@ -1,7 +1,14 @@
-import Mathlib
+import Mathlib.Tactic
+import Mathlib.Data.Real.Basic
+import Mathlib.Order.Filter.Basic
+import Mathlib.Order.Filter.AtTopBot.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.Algebra.Order.Group.Abs
+import Mathlib.Algebra.Order.Sub.Basic
+import Mathlib.Data.Finset.Card
 import JSP314.Defs
 import JSP314.Bounds
-
 /-!
 # JSP-000314 — Tao consecutive-products / bad-interval asymptotic (Ta26c)
 
