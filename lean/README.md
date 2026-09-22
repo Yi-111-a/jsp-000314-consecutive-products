@@ -28,6 +28,13 @@ lake build
 - `JSP314/Type2Run.lean` — type-2 dichotomy branch: if no element of a bad
   `[u,v]` is divisible by `P²`, then `P` divides two distinct elements,
   hence `P ≤ v - u`; every element is `P`-smooth.
+- `JSP314/ShortLong.lean` — the short/long decomposition: a short bad
+  interval (`v - u < P`) contains a `P²`-multiple which is a bad singleton
+  `m` with `lpf m = P`, and covered points lie within `< P ≤ √m` of it
+  (`shortBadCount x ≤ badSingletonCount (2x) · (2√(2x)+1)`); a long bad
+  interval is a smooth run (`IsSmoothRun`), whose length obeys
+  `v+1-u ≤ 2^{π'(v-u+1)}·√v` (Mathlib's squareful-kernel smooth bound);
+  `badNonSingletonCount x ≤ shortBadCount x + smoothRunCoveredCount x`.
 - `JSP314/Main.lean` — headline `bad_interval_count_asymptotic`, proved
   modulo the single analytic core lemma `badNonSingleton_interval_bound`
   (the deep content of Ta26c).
