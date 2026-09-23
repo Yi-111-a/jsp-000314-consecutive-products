@@ -45,6 +45,8 @@ namespace SmoothLB
 
 open Finset Filter
 
+open scoped Topology
+
 /-- The primes in the dyadic interval `(n, 2n]`. -/
 def dyadicPrimes (n : ℕ) : Finset ℕ := (Nat.primesLE (2 * n)).filter fun p => n < p
 
@@ -88,6 +90,7 @@ theorem centralBinom_le_dyadic (n : ℕ) (hn : 2 < n) :
           Finset.prod_le_prod fun p _ => Nat.pow_factorization_choose_le h2n0
       _ = (2 * n) ^ (dyadicPrimes n).card := by
           rw [Finset.prod_const]
+          rfl
   · -- primes `≤ n`
     have hset : (Nat.primesLE (2 * n)).filter (fun p => ¬ n < p) = Nat.primesLE n := by
       ext p
@@ -106,7 +109,7 @@ theorem centralBinom_le_dyadic (n : ℕ) (hn : 2 < n) :
           ≤ ∏ p ∈ (Nat.primesLE n).filter (· ≤ Nat.sqrt (2 * n)), (2 * n) :=
             Finset.prod_le_prod fun p _ => Nat.pow_factorization_choose_le h2n0
         _ = (2 * n) ^ ((Nat.primesLE n).filter (· ≤ Nat.sqrt (2 * n))).card :=
-            Finset.prod_const
+            Finset.prod_const (2 * n)
         _ ≤ (2 * n) ^ Nat.sqrt (2 * n) := by
             apply Nat.pow_le_pow_right (by omega)
             calc ((Nat.primesLE n).filter (· ≤ Nat.sqrt (2 * n))).card
@@ -115,7 +118,7 @@ theorem centralBinom_le_dyadic (n : ℕ) (hn : 2 < n) :
                   intro p hp
                   rw [Finset.mem_filter, Nat.mem_primesLE] at hp
                   exact Finset.mem_Icc.mpr ⟨hp.1.2.one_lt.le, hp.2⟩
-              _ = Nat.sqrt (2 * n) := by rw [Finset.card_Icc]; omega
+              _ = Nat.sqrt (2 * n) := by rw [Nat.card_Icc]; omega
     · -- primes in `(√(2n), n]`: factors with `p ≤ 2n/3` are at most `p`,
       -- factors with `p > 2n/3` are `1`
       calc (∏ p ∈ (Nat.primesLE n).filter (fun p => ¬ p ≤ Nat.sqrt (2 * n)),
@@ -136,7 +139,7 @@ theorem centralBinom_le_dyadic (n : ℕ) (hn : 2 < n) :
               (· ≤ 2 * n / 3), p := by
             apply Finset.prod_le_prod
             intro p hp
-            rw [Finset.mem_filter, Nat.mem_primesLE] at hp
+            rw [Finset.mem_filter, Finset.mem_filter, Nat.mem_primesLE] at hp
             obtain ⟨⟨⟨-, hp'⟩, hsqrt⟩, -⟩ := hp
             have hsqrt' : Nat.sqrt (2 * n) < p := by omega
             have he1 : (Nat.centralBinom n).factorization p ≤ 1 :=
@@ -147,12 +150,12 @@ theorem centralBinom_le_dyadic (n : ℕ) (hn : 2 < n) :
         _ ≤ ∏ p ∈ Nat.primesLE (2 * n / 3), p := by
             apply Finset.prod_le_prod_of_subset_of_one_le
             · intro p hp
-              rw [Finset.mem_filter, Nat.mem_primesLE] at hp
+              rw [Finset.mem_filter, Finset.mem_filter, Nat.mem_primesLE] at hp
               exact Nat.mem_primesLE.mpr ⟨hp.2, hp.1.1.2⟩
             · intro p hp _
               exact (Nat.prime_of_mem_primesLE hp).one_lt.le
-        _ = (2 * n / 3)# := rfl
-        _ ≤ 4 ^ (2 * n / 3) := Nat.primorial_le_four_pow (2 * n / 3)
+        _ = primorial (2 * n / 3) := (primorial_eq_prod_primesLE _).symm
+        _ ≤ 4 ^ (2 * n / 3) := primorial_le_four_pow (2 * n / 3)
 
 /-- Taking logarithms: `Δ(n)·log(2n) ≥ (n/3)·log 4 - log n - √(2n)·log(2n)`. -/
 theorem dyadicPrimes_card_mul_log_ge (n : ℕ) (hn : 4 ≤ n) :
@@ -177,7 +180,10 @@ theorem dyadicPrimes_card_mul_log_ge (n : ℕ) (hn : 4 ≤ n) :
     have := Real.nat_sqrt_le_real_sqrt (a := 2 * n)
     simpa using this
   have hdiv : ((2 * n / 3 : ℕ) : ℝ) ≤ (2 * n : ℝ) / 3 := by
-    simpa using Nat.cast_div_le (2 * n) 3
+    have h : ((2 * n / 3 : ℕ) : ℝ) ≤ ((2 * n : ℕ) : ℝ) / ((3 : ℕ) : ℝ) :=
+      Nat.cast_div_le
+    push_cast at h
+    exact h
   have hlog2n : 0 ≤ Real.log (2 * n : ℝ) :=
     Real.log_nonneg (by norm_cast; omega)
   have hlog4 : 0 ≤ Real.log 4 := Real.log_nonneg (by norm_num)
@@ -199,11 +205,14 @@ theorem eventually_dyadicPrimes_card_ge : ∀ᶠ n : ℕ in Filter.atTop,
   have h2 : Filter.Tendsto
       (fun n : ℕ => Real.sqrt (2 * (n : ℝ)) * Real.log (2 * (n : ℝ)) / n)
       Filter.atTop (𝓝 0) := by
-    have hb := (Real.isLittleO_log_rpow_atTop (show (0 : ℝ) < 1 / 2 by norm_num)).comp_tendsto
+    have hb := (isLittleO_log_rpow_atTop (show (0 : ℝ) < 1 / 2 by norm_num)).comp_tendsto
       (tendsto_natCast_atTop_atTop.const_mul_atTop' (show (0 : ℝ) < 2 by norm_num))
     have hb' := hb.tendsto_div_nhds_zero
-    refine (hb'.const_mul 2).congr' ?_
+    have hb2 := hb'.const_mul (2 : ℝ)
+    rw [mul_zero] at hb2
+    refine hb2.congr' ?_
     filter_upwards [eventually_gt_atTop (0 : ℕ)] with n hn
+    simp only [Function.comp_apply]
     have hn' : (0 : ℝ) < n := by exact_mod_cast hn
     have hB0 : (0 : ℝ) < (2 * (n : ℝ)) ^ (1 / 2 : ℝ) := by positivity
     have hB2 : ((2 * (n : ℝ)) ^ (1 / 2 : ℝ)) ^ 2 = 2 * (n : ℝ) := by
@@ -230,7 +239,7 @@ theorem eventually_dyadicPrimes_card_ge : ∀ᶠ n : ℕ in Filter.atTop,
     h2.eventually (Iio_mem_nhds hε)
   filter_upwards [e1, e2, eventually_ge_atTop 4] with n hn1 hn2 hn4
   have hn0 : (0 : ℝ) < n := by exact_mod_cast (by omega : 0 < n)
-  have hlogx : 0 < Real.log (2 * (n : ℝ)) := Real.log_pos (by linarith)
+  have hlogx : 0 < Real.log (2 * (n : ℝ)) := Real.log_pos (by norm_cast; omega)
   have hlogn : 0 < Real.log n := Real.log_pos (by norm_cast; omega)
   have hlogn' : Real.log n < ε * n := by rwa [div_lt_iff₀ hn0] at hn1
   have hsqrt' : Real.sqrt (2 * (n : ℝ)) * Real.log (2 * (n : ℝ)) < ε * n := by
@@ -382,7 +391,8 @@ theorem card_quintSet_le_badSingletonCount (x P0 Q0 : ℕ) (hQP : 16 * Q0 ≤ P0
       calc p ^ 2 * (q1 * (q2 * (q3 * q4)))
           ≤ (2 * P0) ^ 2 * ((2 * Q0) * ((4 * Q0) * ((8 * Q0) * (16 * Q0)))) :=
             Nat.mul_le_mul (Nat.pow_le_pow_left hp2 2)
-              (Nat.mul_le_mul hq1b (Nat.mul_le_mul hq2b (Nat.mul_le_mul hq3b hq4b)))
+              (Nat.mul_le_mul hq1b
+                (Nat.mul_le_mul (by omega) (Nat.mul_le_mul (by omega) (by omega))))
         _ ≤ x := hx
     have h2 : 2 ≤ p ^ 2 * (q1 * (q2 * (q3 * q4))) := by
       calc 2 ≤ 2 ^ 2 * 1 := by norm_num
@@ -478,6 +488,7 @@ theorem card_quintSet_le_badSingletonCount (x P0 Q0 : ℕ) (hQP : 16 * Q0 ≤ P0
 ### Assembly of the final bound
 -/
 
+set_option maxHeartbeats 1600000 in
 theorem badSingletonCount_eventually_ge_smooth :
     ∃ c : ℝ, 0 < c ∧ ∀ᶠ x : ℕ in Filter.atTop,
       c * (x : ℝ) ^ (83 / 100 : ℝ) / Real.log x ^ 5 ≤ (badSingletonCount x : ℝ) := by
@@ -536,18 +547,24 @@ theorem badSingletonCount_eventually_ge_smooth :
   have hC3 : ∀ᶠ x : ℕ in Filter.atTop,
       ((2 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊ : ℕ) : ℝ) /
           (8 * Real.log (2 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊))
-        ≤ (dyadicPrimes (2 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊)).card :=
-    h2Q0t.eventually eventually_dyadicPrimes_card_ge
+        ≤ (dyadicPrimes (2 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊)).card := by
+    filter_upwards [h2Q0t.eventually eventually_dyadicPrimes_card_ge] with x hx
+    push_cast at hx ⊢
+    exact hx
   have hC4 : ∀ᶠ x : ℕ in Filter.atTop,
       ((4 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊ : ℕ) : ℝ) /
           (8 * Real.log (4 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊))
-        ≤ (dyadicPrimes (4 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊)).card :=
-    h4Q0t.eventually eventually_dyadicPrimes_card_ge
+        ≤ (dyadicPrimes (4 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊)).card := by
+    filter_upwards [h4Q0t.eventually eventually_dyadicPrimes_card_ge] with x hx
+    push_cast at hx ⊢
+    exact hx
   have hC5 : ∀ᶠ x : ℕ in Filter.atTop,
       ((8 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊ : ℕ) : ℝ) /
           (8 * Real.log (8 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊))
-        ≤ (dyadicPrimes (8 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊)).card :=
-    h8Q0t.eventually eventually_dyadicPrimes_card_ge
+        ≤ (dyadicPrimes (8 * ⌈((x : ℝ) ^ (1 / 200 : ℝ)) ^ 33 / 16⌉₊)).card := by
+    filter_upwards [h8Q0t.eventually eventually_dyadicPrimes_card_ge] with x hx
+    push_cast at hx ⊢
+    exact hx
   -- `t ≥ 32` eventually
   have ht32 : ∀ᶠ x : ℕ in Filter.atTop, (32 : ℝ) ≤ (x : ℝ) ^ (1 / 200 : ℝ) :=
     htt.eventually_ge_atTop 32
@@ -556,11 +573,9 @@ theorem badSingletonCount_eventually_ge_smooth :
     with x hC1 hC2 hC3 hC4 hC5 ht32 hx2
   -- abbreviations
   set t : ℝ := (x : ℝ) ^ (1 / 200 : ℝ) with ht
-  rw [← ht] at hC1 hC2 hC3 hC4 hC5 ht32
   set P0 : ℕ := ⌈t ^ 34 / 4⌉₊ with hP0
-  rw [← hP0] at hC1
   set Q0 : ℕ := ⌈t ^ 33 / 16⌉₊ with hQ0
-  rw [← hQ0] at hC2 hC3 hC4 hC5
+  push_cast at hC3 hC4 hC5
   -- basic positivity facts
   have hx0 : (0 : ℝ) < x := by exact_mod_cast (by omega : 0 < x)
   have hLpos : 0 < Real.log (x : ℝ) := Real.log_pos (by exact_mod_cast (by omega : 1 < x))
@@ -585,17 +600,17 @@ theorem badSingletonCount_eventually_ge_smooth :
     rw [hP0]; exact Nat.le_ceil _
   have hP0_le : (P0 : ℝ) ≤ t ^ 34 / 2 := by
     have h := (Nat.ceil_lt_add_one (show (0 : ℝ) ≤ t ^ 34 / 4 by positivity)).le
-    rw [hP0] at h
+    rw [← hP0] at h
     linarith [ht34_ge]
   have hQ0_ge : t ^ 33 / 16 ≤ (Q0 : ℝ) := by
     rw [hQ0]; exact Nat.le_ceil _
   have hQ0_le : (Q0 : ℝ) ≤ t ^ 33 / 8 := by
     have h := (Nat.ceil_lt_add_one (show (0 : ℝ) ≤ t ^ 33 / 16 by positivity)).le
-    rw [hQ0] at h
+    rw [← hQ0] at h
     linarith [ht33_ge]
   -- `16·Q0 ≤ P0` (so that every `qᵢ < p`)
   have h8v : 8 * t ^ 33 ≤ t ^ 34 := by
-    have h : t ^ 34 = t * t ^ 33 := pow_succ t 33
+    have h : t ^ 34 = t * t ^ 33 := by ring
     rw [h]
     exact mul_le_mul_of_nonneg_right (by linarith [ht32]) ht33_pos.le
   have hQP : 16 * Q0 ≤ P0 := by
@@ -634,44 +649,43 @@ theorem badSingletonCount_eventually_ge_smooth :
     calc Real.log (P0 : ℝ) ≤ Real.log (t ^ 34) :=
           Real.log_le_log hpos (by linarith [hP0_le, ht34_pos])
       _ = 34 * Real.log t := Real.log_pow _ _
-      _ = 34 / 200 * Real.log x := by rw [hlogt]; push_cast; ring
+      _ = 34 / 200 * Real.log x := by rw [hlogt]; ring
   have hlogP0pos : 0 < Real.log (P0 : ℝ) := Real.log_pos (by linarith [hP0_ge, ht34_ge])
   have hlogQ0 : Real.log (Q0 : ℝ) ≤ 33 / 200 * Real.log x := by
     have hpos : (0 : ℝ) < Q0 := by linarith [hQ0_ge, ht33_ge]
     calc Real.log (Q0 : ℝ) ≤ Real.log (t ^ 33) :=
           Real.log_le_log hpos (by linarith [hQ0_le, ht33_pos])
       _ = 33 * Real.log t := Real.log_pow _ _
-      _ = 33 / 200 * Real.log x := by rw [hlogt]; push_cast; ring
-  have hlogQ0pos : 0 < Real.log (Q0 : ℝ) := Real.log_pos (by linarith [hQ0_ge, ht33_ge])
+      _ = 33 / 200 * Real.log x := by rw [hlogt]; ring
+  have hlogQ0pos : 0 < Real.log (Q0 : ℝ) := Real.log_pos (by
+      have hle : (t : ℝ) ≤ t ^ 33 := le_self_pow₀ (by linarith [ht32]) (by norm_num)
+      linarith [hQ0_ge])
   have hlog2Q0 : Real.log (2 * Q0 : ℝ) ≤ 33 / 200 * Real.log x := by
     have hpos : (0 : ℝ) < (2 * Q0 : ℕ) := by positivity
     have hle : (2 * Q0 : ℝ) ≤ t ^ 33 := by
       have : (Q0 : ℝ) ≤ t ^ 33 / 8 := hQ0_le
-      push_cast
       linarith [ht33_pos]
     calc Real.log (2 * Q0 : ℝ) ≤ Real.log (t ^ 33) := Real.log_le_log (by positivity) hle
       _ = 33 * Real.log t := Real.log_pow _ _
-      _ = 33 / 200 * Real.log x := by rw [hlogt]; push_cast; ring
+      _ = 33 / 200 * Real.log x := by rw [hlogt]; ring
   have hlog2Q0pos : 0 < Real.log (2 * Q0 : ℝ) :=
     Real.log_pos (by have := hQ0_ge; push_cast at *; linarith [ht33_ge])
   have hlog4Q0 : Real.log (4 * Q0 : ℝ) ≤ 33 / 200 * Real.log x := by
     have hle : (4 * Q0 : ℝ) ≤ t ^ 33 := by
       have : (Q0 : ℝ) ≤ t ^ 33 / 8 := hQ0_le
-      push_cast
       linarith [ht33_pos]
     calc Real.log (4 * Q0 : ℝ) ≤ Real.log (t ^ 33) := Real.log_le_log (by positivity) hle
       _ = 33 * Real.log t := Real.log_pow _ _
-      _ = 33 / 200 * Real.log x := by rw [hlogt]; push_cast; ring
+      _ = 33 / 200 * Real.log x := by rw [hlogt]; ring
   have hlog4Q0pos : 0 < Real.log (4 * Q0 : ℝ) :=
     Real.log_pos (by have := hQ0_ge; push_cast at *; linarith [ht33_ge])
   have hlog8Q0 : Real.log (8 * Q0 : ℝ) ≤ 33 / 200 * Real.log x := by
     have hle : (8 * Q0 : ℝ) ≤ t ^ 33 := by
       have : (Q0 : ℝ) ≤ t ^ 33 / 8 := hQ0_le
-      push_cast
       linarith [ht33_pos]
     calc Real.log (8 * Q0 : ℝ) ≤ Real.log (t ^ 33) := Real.log_le_log (by positivity) hle
       _ = 33 * Real.log t := Real.log_pow _ _
-      _ = 33 / 200 * Real.log x := by rw [hlogt]; push_cast; ring
+      _ = 33 / 200 * Real.log x := by rw [hlogt]; ring
   have hlog8Q0pos : 0 < Real.log (8 * Q0 : ℝ) :=
     Real.log_pos (by have := hQ0_ge; push_cast at *; linarith [ht33_ge])
   -- lower bounds for each dyadic cardinal
@@ -742,6 +756,14 @@ theorem badSingletonCount_eventually_ge_smooth :
           div_le_div_of_nonneg_right hlo (by positivity)
       _ ≤ _ := hC5
   -- product bound
+  have hnn22 : (0 : ℝ) ≤ t ^ 33 / (22 * Real.log x) :=
+    div_nonneg ht33_pos.le (by linarith [hLnn])
+  have hnn11 : (0 : ℝ) ≤ t ^ 33 / (11 * Real.log x) :=
+    div_nonneg ht33_pos.le (by linarith [hLnn])
+  have hnn6 : (0 : ℝ) ≤ t ^ 33 / (6 * Real.log x) :=
+    div_nonneg ht33_pos.le (by linarith [hLnn])
+  have hnn3 : (0 : ℝ) ≤ t ^ 33 / (3 * Real.log x) :=
+    div_nonneg ht33_pos.le (by linarith [hLnn])
   have hprod : t ^ 34 / (6 * Real.log x) * (t ^ 33 / (22 * Real.log x) *
       (t ^ 33 / (11 * Real.log x) * (t ^ 33 / (6 * Real.log x) *
         (t ^ 33 / (3 * Real.log x))))) ≤
@@ -751,11 +773,10 @@ theorem badSingletonCount_eventually_ge_smooth :
     mul_le_mul hD1
       (mul_le_mul hD2
         (mul_le_mul hD3
-          (mul_le_mul hD4 hD5 (div_nonneg ht33_pos.le (by linarith [hLnn]))
-            (by positivity))
-          (div_nonneg ht33_pos.le (by linarith [hLnn])) (by positivity))
-        (div_nonneg ht33_pos.le (by linarith [hLnn])) (by positivity))
-      (div_nonneg ht33_pos.le (by linarith [hLnn])) (by positivity)
+          (mul_le_mul hD4 hD5 hnn3 (by positivity))
+          (mul_nonneg hnn6 hnn3) (by positivity))
+        (mul_nonneg hnn11 (mul_nonneg hnn6 hnn3)) (by positivity))
+      (mul_nonneg hnn22 (mul_nonneg hnn11 (mul_nonneg hnn6 hnn3))) (by positivity)
   -- final real inequality
   have key : t ^ 34 / (6 * Real.log x) * (t ^ 33 / (22 * Real.log x) *
       (t ^ 33 / (11 * Real.log x) * (t ^ 33 / (6 * Real.log x) *
@@ -768,9 +789,12 @@ theorem badSingletonCount_eventually_ge_smooth :
           (mul_pos (by norm_num) (pow_pos hLpos 5)).ne']
         ring
     _ ≤ t ^ 166 / (26136 * Real.log x ^ 5) := by
-        apply div_le_div_of_nonneg_left (by positivity)
-          (mul_pos (by norm_num) (pow_pos hLpos 5))
-        exact mul_le_mul_of_nonneg_right (by norm_num) (pow_nonneg hLnn 5)
+        have ha : (0 : ℝ) ≤ t ^ 166 := by positivity
+        have hc : (0 : ℝ) < 26136 * Real.log x ^ 5 :=
+          mul_pos (by norm_num) (pow_pos hLpos 5)
+        have hcb : (26136 : ℝ) * Real.log x ^ 5 ≤ 32768 * Real.log x ^ 5 :=
+          mul_le_mul_of_nonneg_right (by norm_num) (pow_nonneg hLnn 5)
+        exact div_le_div_of_nonneg_left ha hc hcb
     _ = t ^ 34 / (6 * Real.log x) * (t ^ 33 / (22 * Real.log x) *
           (t ^ 33 / (11 * Real.log x) * (t ^ 33 / (6 * Real.log x) *
             (t ^ 33 / (3 * Real.log x))))) := key.symm

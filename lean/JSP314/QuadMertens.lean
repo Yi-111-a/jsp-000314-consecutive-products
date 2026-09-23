@@ -1,5 +1,6 @@
 import JSP314.QuadRegime
 import Mathlib.NumberTheory.Chebyshev
+import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-!
 # A weak explicit Mertens bound over primes
@@ -53,9 +54,8 @@ open scoped Nat
 theorem log_factorial_eq_sum_vonMangoldt_mul_div (k : ℕ) :
     Real.log (k !) = ∑ d ∈ Icc 1 k, Λ d * ((k / d : ℕ) : ℝ) := by
   have hfact : (k ! : ℝ) = ∏ m ∈ Icc 1 k, (m : ℝ) := by
-    rw [Nat.cast_prod]
-    congr 1
-    rw [← Finset.Ico_add_one_right_eq_Icc, Finset.prod_Ico_eq_prod_range,
+    rw [← Nat.cast_prod, Nat.cast_inj,
+      ← Finset.Ico_add_one_right_eq_Icc, Finset.prod_Ico_eq_prod_range,
       Nat.add_sub_cancel,
       show ∏ i ∈ range k, (1 + i) = ∏ i ∈ range k, (i + 1) from
         Finset.prod_congr rfl fun i _ ↦ add_comm 1 i]
@@ -75,7 +75,8 @@ theorem log_factorial_eq_sum_vonMangoldt_mul_div (k : ℕ) :
       = ∑ m ∈ Icc 1 k, ∑ d ∈ m.divisors, (Λ d : ℝ) :=
     Finset.sum_congr rfl fun m _ ↦ vonMangoldt_sum.symm
   rw [hfact, Real.log_prod fun m hm ↦ by
-        rw [Nat.cast_ne_zero]; exact (Finset.mem_Icc.mp hm).1.ne',
+        rw [Nat.cast_ne_zero]
+        exact Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hm).1,
     hsum]
   calc ∑ m ∈ Icc 1 k, ∑ d ∈ m.divisors, (Λ d : ℝ)
       = ∑ m ∈ Icc 1 k, ∑ d ∈ Icc 1 k, (if d ∣ m then Λ d else 0) := by
@@ -103,22 +104,26 @@ theorem sum_vonMangoldt_div_le_log_add_psi {k : ℕ} (hk : 1 ≤ k) :
     intro d hd
     rw [sub_le_iff_le_add]
     have h := Nat.lt_floor_add_one ((k : ℝ) / (d : ℝ))
-    rwa [Nat.floor_div_eq_div] at h
+    rw [Nat.floor_div_eq_div] at h
+    exact h.le
   have hexp : ∑ d ∈ Icc 1 k, Λ d * ((k : ℝ) / d - 1)
       = k * ∑ d ∈ Icc 1 k, Λ d / d - ∑ d ∈ Icc 1 k, Λ d := by
-    rw [← Finset.sum_sub_distrib, ← Finset.mul_sum]
+    rw [Finset.mul_sum, ← Finset.sum_sub_distrib]
     refine Finset.sum_congr rfl fun d hd ↦ ?_
-    have hd0 : (d : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (Finset.mem_Icc.mp hd).1.ne'
+    have hd0 : (d : ℝ) ≠ 0 :=
+      Nat.cast_ne_zero.mpr (Nat.one_le_iff_ne_zero.mp (Finset.mem_Icc.mp hd).1)
     field_simp
-    ring
   have hpsi : Chebyshev.psi (k : ℝ) = ∑ d ∈ Icc 1 k, Λ d := by
     rw [Chebyshev.psi_eq_sum_Icc, Nat.floor_natCast]
     symm
-    apply Finset.sum_subset (Finset.Icc_subset_Icc (zero_le 1) le_rfl)
+    apply Finset.sum_subset (Finset.Icc_subset_Icc zero_le_one le_rfl)
     intro x hx hnx
     simp only [mem_Icc] at hx hnx
-    have : x = 0 := by omega
-    simp [this, ArithmeticFunction.vonMangoldt_apply]
+    have hx0 : x = 0 := by
+      rcases Nat.eq_zero_or_pos x with h | h
+      · exact h
+      · exact absurd ⟨h, hx.2⟩ hnx
+    simp [hx0]
   have hstep : ∑ d ∈ Icc 1 k, Λ d * ((k : ℝ) / d - 1) ≤ Real.log (k !) := by
     rw [log_factorial_eq_sum_vonMangoldt_mul_div]
     exact Finset.sum_le_sum fun d hd ↦
@@ -128,13 +133,15 @@ theorem sum_vonMangoldt_div_le_log_add_psi {k : ℕ} (hk : 1 ≤ k) :
       exact_mod_cast Nat.factorial_le_pow k
     calc Real.log (k !) ≤ Real.log ((k : ℝ) ^ k) :=
           Real.log_le_log (Nat.cast_pos.mpr (Nat.factorial_pos k)) hf
-      _ = k * Real.log k := Real.log_pow
-  rw [hexp, hpsi] at hstep
+      _ = k * Real.log k := Real.log_pow _ _
+  rw [hexp, ← hpsi] at hstep
   have key := hstep.trans hlogfact
-  rw [div_le_iff₀ hkR, add_mul, div_mul_cancel₀ _ hkR.ne']
-  -- goal: `(∑ Λ/d)·k ≤ log k·k + ψ k`; key: `k·∑ Λ/d - ψ k ≤ k·log k`
-  nlinarith [mul_comm (∑ d ∈ Icc 1 k, Λ d / (d : ℝ)) (k : ℝ),
-    mul_comm (Real.log k) (k : ℝ)]
+  -- key: `k·∑ Λ/d - ψ k ≤ k·log k`; conclude by dividing through by `k`.
+  have h3 : (∑ d ∈ Icc 1 k, Λ d / (d : ℝ)) - Real.log k
+      ≤ Chebyshev.psi k / k := by
+    rw [le_div_iff₀ hkR]
+    linarith [key]
+  linarith
 
 /-- **Weak explicit Mertens bound**:
 `∑_{p ≤ k} (log p)/(p - 1) ≤ 2·log k + 11`. -/
@@ -147,11 +154,11 @@ theorem sum_log_div_pred_primesLE_le {k : ℕ} (hk : 1 ≤ k) :
     have hpp := (Nat.mem_primesLE.mp hp).2
     have hp2 : (2 : ℝ) ≤ p := Nat.cast_le.mpr hpp.two_le
     have hlogp : 0 ≤ Real.log (p : ℝ) := Real.log_nonneg (by linarith)
-    have hp1 : (0 : ℝ) < ((p - 1 : ℕ) : ℝ) := by
-      rw [Nat.cast_pos]; omega
-    rw [div_le_div_iff₀ hp1 (by linarith : (0 : ℝ) < p)]
+    have hp1 : (0 : ℝ) < ((p - 1 : ℕ) : ℝ) :=
+      Nat.cast_pos.mpr (Nat.sub_pos_of_lt hpp.one_lt)
+    rw [← mul_div_assoc, div_le_div_iff₀ hp1 (by linarith : (0 : ℝ) < p)]
     have hpp1 : ((p - 1 : ℕ) : ℝ) = p - 1 := by
-      rw [← Nat.cast_one, ← Nat.cast_sub hpp.one_le]
+      rw [Nat.cast_sub hpp.one_le, Nat.cast_one]
     rw [hpp1]
     nlinarith [mul_nonneg hlogp (sub_nonneg.mpr hp2)]
   have hsub : k.primesLE ⊆ Icc 1 k := by
@@ -171,7 +178,7 @@ theorem sum_log_div_pred_primesLE_le {k : ℕ} (hk : 1 ≤ k) :
     refine (sum_vonMangoldt_div_le_log_add_psi hk).trans ?_
     have hpsi := Chebyshev.psi_le_const_mul_self (Nat.cast_nonneg k : (0 : ℝ) ≤ k)
     have hdiv : Chebyshev.psi k / k ≤ Real.log 4 + 4 := by
-      rw [div_le_iff₀ (Nat.cast_pos.mpr hk), div_mul_cancel₀ _ (Nat.cast_pos.mpr hk).ne']
+      rw [div_le_iff₀ (Nat.cast_pos.mpr hk)]
       exact hpsi
     linarith
   have h2log : Real.log 4 = 2 * Real.log 2 := by
@@ -204,8 +211,11 @@ theorem quadRegimeOpen_of_mertens
   have hg := hgap n k hq
   have hsum : k.primeCounting * Real.log n +
         (k : ℝ) * ∑ p ∈ k.primesLE, Real.log p / ((p - 1 : ℕ) : ℝ)
-      ≤ k.primeCounting * Real.log n + k * B k :=
-    add_le_add_left (mul_le_mul_of_nonneg_left hb (Nat.cast_nonneg k)) _
+      ≤ k.primeCounting * Real.log n + k * B k := by
+    have hbk : (k : ℝ) * ∑ p ∈ k.primesLE, Real.log p / ((p - 1 : ℕ) : ℝ)
+        ≤ (k : ℝ) * B k :=
+      mul_le_mul_of_nonneg_left hb (Nat.cast_nonneg k)
+    linarith
   linarith [hmaster.trans hsum]
 
 end SylvesterSchur

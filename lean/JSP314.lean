@@ -11,3 +11,6 @@ import JSP314.RunCount
 import JSP314.QuadRegime
 import JSP314.QuadMertens
 import JSP314.SmoothLB
+import JSP314.SingletonLB
+import JSP314.ArcCount
+import JSP314.QuadEasy
