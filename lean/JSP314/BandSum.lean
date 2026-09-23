@@ -43,7 +43,7 @@ Sylvester–Schur constant (`SSBound`). -/
 theorem badNonSingletonCount_le_two_mul_runCountSum_add_const (x : ℕ) :
     badNonSingletonCount x ≤ 2 * runCountSum x + (2 * 10 ^ 16 + 1) := by
   have h1 := badNonSingletonCount_le_short_add_const x
-  have h2 : shortBadCount x ≤ runCountSum x := shortBadCount_le_run_sum x
+  have h2 : shortBadCount x ≤ 2 * runCountSum x := shortBadCount_le_run_sum x
   omega
 
 /-- `s/L → 0` along `ℕ`, where `s = √(L·L₂)`. -/
@@ -153,8 +153,11 @@ theorem eventually_rpow_one_sub_mul_log_pow_le_exp_neg (δ γ c : ℝ)
       rw [hLγ, hxδ, ← Real.exp_add]
       exact Real.exp_le_exp.mpr hsum
     have hxδpos : (0 : ℝ) < (x : ℝ) ^ δ := Real.rpow_pos_of_pos hxr δ
-    rw [Real.rpow_neg hxr.le, Real.exp_neg, inv_mul_eq_div, ← one_div,
-      div_le_div_iff hxδpos (Real.exp_pos _), one_mul,
+    rw [Real.rpow_neg hxr.le,
+      show Real.exp (-c * s) = (Real.exp (c * s))⁻¹ by
+        rw [show -c * s = -(c * s) by ring, Real.exp_neg],
+      inv_mul_eq_div, ← one_div,
+      div_le_div_iff₀ hxδpos (Real.exp_pos _), one_mul,
       mul_comm (L ^ γ) _]
     exact h1
   calc (x : ℝ) * (x : ℝ) ^ (-δ) * L ^ γ
@@ -180,7 +183,7 @@ theorem eventually_const_le_exp_neg_mul_log_inv (C c : ℝ) :
   have hx0 : x ≠ 0 := by
     intro h0
     subst h0
-    simp at hL1
+    norm_num at hL1
   have hxr : (0 : ℝ) < (x : ℝ) := by exact_mod_cast Nat.pos_of_ne_zero hx0
   rw [show (1 - (1 : ℝ) / 2) = 1 / 2 by ring, Real.rpow_one] at hA'
   rw [Real.rpow_neg_one, ← div_eq_mul_inv, le_div_iff₀ hL]
@@ -228,7 +231,9 @@ theorem hN_of_runCountSum_le {CN : ℝ}
   have htot : (badNonSingletonCount x : ℝ) ≤ A * (5 / 4) := by
     calc (badNonSingletonCount x : ℝ)
         ≤ 2 * (runCountSum x : ℝ) + ((2 * 10 ^ 16 + 1 : ℕ) : ℝ) := hNle
-      _ ≤ 2 * (A / 8) + A := by linarith [hxC]
+      _ ≤ 2 * (A / 8) + A := by
+          simp only [hAdef, hsdef] at hx hxC ⊢
+          linarith
       _ = A * (5 / 4) := by ring
   have hLm1 : (Real.log x) ^ (-(1 : ℝ)) * (Real.log x) ^ ε =
       (Real.log x) ^ (-(1 - ε)) := by
