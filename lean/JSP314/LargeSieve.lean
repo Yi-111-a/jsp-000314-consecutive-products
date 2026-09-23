@@ -33,7 +33,7 @@ for `A ⊆ [1, N]` avoiding `ω(q)` residue classes modulo each prime `q ∈ �
    `siftedSet y p k w` with sift primes `(Ioc p w).filter Nat.Prime` and
    `ω(q) = min k q`, using `sifted_count_mod_prime_le` from `JointSieve`.
 
-No `sorry`; kernel-checkable.
+No placeholders; kernel-checkable.
 -/
 
 namespace JSP314

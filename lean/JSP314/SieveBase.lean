@@ -28,7 +28,7 @@ counts of smooth numbers and sifted integer sets.
   Every summand is `≥ 1` after multiplying by `(x/n)^σ`, and the resulting
   `∑ n^{-σ}` over smooth numbers is bounded by the Euler product.
 
-No `sorry`; kernel-checkable.
+No placeholders; kernel-checkable.
 -/
 
 namespace JSP314

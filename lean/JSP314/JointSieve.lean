@@ -42,7 +42,7 @@ error term `∏(q - min k q) ≤ ∏ q ≤ w^{#S}` is `w^{O(π(w))}` — fine fo
 * `siftedSet_card_le` — the `ℝ` bound `y·∏(1 - min k q/q) + ∏(q - min k q)`.
 * `siftedSet_card_le_pow` — same with error `w^{#S}`.
 
-No `sorry`; kernel-checkable.
+No placeholders; kernel-checkable.
 -/
 
 namespace JSP314

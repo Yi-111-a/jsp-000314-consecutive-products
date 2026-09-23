@@ -47,7 +47,7 @@ by the truncated alternating binomial identity, hence `ν n ≥ 0` and
   `y^{2t} · tail ≤ ∏_{q ∈ S} (1 + y/q) ≤ exp(y · ∑_{q ∈ S} q⁻¹)` for `y ≥ 1`,
   which give `tail ≤ (e σ / 2t)^{2t}`-type control with `σ = ∑_{q ∈ S} q⁻¹`.
 
-No `sorry`; kernel-checkable.
+No placeholders; kernel-checkable.
 -/
 
 namespace JSP314
