@@ -43,7 +43,7 @@ Sylvester–Schur constant (`SSBound`). -/
 theorem badNonSingletonCount_le_two_mul_runCountSum_add_const (x : ℕ) :
     badNonSingletonCount x ≤ 2 * runCountSum x + (2 * 10 ^ 16 + 1) := by
   have h1 := badNonSingletonCount_le_short_add_const x
-  have h2 := shortBadCount_le_run_sum x
+  have h2 : shortBadCount x ≤ runCountSum x := shortBadCount_le_run_sum x
   omega
 
 /-- `s/L → 0` along `ℕ`, where `s = √(L·L₂)`. -/
@@ -71,7 +71,6 @@ theorem tendsto_sqrt_ll_div_log_atTop :
     have hL2 : (0 : ℝ) ≤ Real.log (Real.log (x : ℝ)) := Real.log_nonneg hx
     rw [div_pow, Real.sq_sqrt (mul_nonneg hL.le hL2)]
     field_simp
-    ring
   -- `√` continuity: `√((s/L)²) = s/L → 0`.
   have h3 := (Real.continuous_sqrt.tendsto 0).comp h2
   rw [Real.sqrt_zero] at h3
@@ -140,6 +139,7 @@ theorem eventually_rpow_one_sub_mul_log_pow_le_exp_neg (δ γ c : ℝ)
   have hxr : (0 : ℝ) < (x : ℝ) := by exact_mod_cast hx
   set L := Real.log (x : ℝ) with hLdef
   set s := Real.sqrt (L * Real.log L) with hsdef
+  have hδL : (0 : ℝ) ≤ δ * L := mul_nonneg hδ.le hL.le
   have hsum : c * s + γ * Real.log L ≤ δ * L := by linarith
   have hsplit : (x : ℝ) ^ (1 - δ) = (x : ℝ) * (x : ℝ) ^ (-δ) := by
     rw [show (1 : ℝ) - δ = 1 + -δ by ring, Real.rpow_add hxr, Real.rpow_one]
