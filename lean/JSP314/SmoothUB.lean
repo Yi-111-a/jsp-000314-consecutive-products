@@ -3,7 +3,7 @@ import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.Log
 import Mathlib.Data.Finset.Pi
 import Mathlib.Data.Fintype.BigOperators
-import Mathlib.Analysis.SpecialFunctions.Pow.Nat
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 # JSP-000314 — the small-prime part of the near-pair count is polylog-small
@@ -97,7 +97,7 @@ theorem smoothUpTo_card_le_log_pow (N k : ℕ) :
   rcases Nat.eq_zero_or_pos N with hN | hN
   · subst hN
     have hempty : Nat.smoothNumbersUpTo 0 k = ∅ := by
-      rw [Finset.eq_empty_iff_forall_not_mem]
+      rw [Finset.eq_empty_iff_forall_notMem]
       intro n hn
       rw [Nat.mem_smoothNumbersUpTo] at hn
       exact Nat.ne_zero_of_mem_smoothNumbers hn.2 (Nat.le_zero.mp hn.1)
@@ -115,7 +115,7 @@ theorem smoothUpTo_card_le_log_pow (N k : ℕ) :
       intro p hp
       obtain ⟨hpk, hpprime⟩ := Nat.mem_primesBelow.mp hp
       have hdvd : p ^ n.factorization p ∣ n :=
-        (hpprime.prime.pow_dvd_iff_le_factorization hn0).mpr le_rfl
+        (hpprime.pow_dvd_iff_le_factorization hn0).mpr le_rfl
       have hle : 2 ^ n.factorization p ≤ N :=
         ((Nat.pow_le_pow_left hpprime.two_le _).trans
           (Nat.le_of_dvd (Nat.pos_of_ne_zero hn0) hdvd)).trans hnN
@@ -282,9 +282,7 @@ theorem nearPair_smallp_sum_le_rpow_half_eventually :
         congr 1
         ring
     _ = (((2 ^ L : ℕ) : ℝ)) ^ (1/2 : ℝ) := by
-        rw [← Real.rpow_natCast]
-        push_cast
-        rfl
+        rw [Nat.cast_pow, Nat.cast_ofNat, Real.rpow_natCast]
     _ ≤ (x : ℝ) ^ (1/2 : ℝ) :=
         Real.rpow_le_rpow (Nat.cast_nonneg _) h2L (by norm_num)
 
