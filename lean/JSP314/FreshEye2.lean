@@ -298,7 +298,7 @@ theorem rightRunCount_one_le_rightNeighbourSmoothCount (x p : ℕ) :
   · intro a ha b hb hab
     rw [Finset.mem_coe, mem_rightRunWitness] at ha hb
     calc a = p ^ 2 * (a / p ^ 2) := (Nat.mul_div_cancel' ha.2.1).symm
-      _ = p ^ 2 * (b / p ^ 2) := by rw [hab]
+      _ = p ^ 2 * (b / p ^ 2) := by rw [show a / p ^ 2 = b / p ^ 2 from hab]
       _ = b := Nat.mul_div_cancel' hb.2.1
 
 /-- The left analogue via `r = m / p²`, `p²·r − 1 = m − 1`. -/
@@ -317,7 +317,7 @@ theorem leftRunCount_one_le_leftNeighbourSmoothCount (x p : ℕ) :
   · intro a ha b hb hab
     rw [Finset.mem_coe, mem_leftRunWitness] at ha hb
     calc a = p ^ 2 * (a / p ^ 2) := (Nat.mul_div_cancel' ha.2.1).symm
-      _ = p ^ 2 * (b / p ^ 2) := by rw [hab]
+      _ = p ^ 2 * (b / p ^ 2) := by rw [show a / p ^ 2 = b / p ^ 2 from hab]
       _ = b := Nat.mul_div_cancel' hb.2.1
 
 /-- **Elementary per-arc form of the reduction** (the suggested
@@ -425,7 +425,7 @@ theorem badNonSingletonCount_le_smooth_windowed_sum (x : ℕ) :
               (leftRunCount_one_le_smoothNumbersUpTo x p hpp))
       _ = (4 * p + 1) *
             (2 * (Nat.smoothNumbersUpTo (2 * x / p ^ 2) (p + 1)).card) := by
-          rw [two_mul]
+          ring
   omega
 
 end SmoothKernelForm

@@ -286,7 +286,7 @@ theorem rightPairQuotCount_le_erdos (x p : ℕ) (hp : 2 ≤ p) :
   calc (rightPairQuotCount x p : ℝ)
       ≤ 1 + (apSmoothParamCount 1 (2 * x / p ^ 2) (p ^ 2) 1 p : ℝ) := by
         exact_mod_cast hsplit
-    _ ≤ _ := add_le_add_left hap 1
+    _ ≤ _ := add_le_add_right hap 1
 
 /-- **Erdős bound (left).**  Writing `p²r − 1 = p²(r−1) + (p²−1)`, the count
 is `≤ 1 + apSmoothParamCount 0 (B−1) (p²) (p²−1) p`, and `p², p²−1` are
@@ -318,7 +318,7 @@ theorem leftPairQuotCount_le_erdos (x p : ℕ) (hp : 2 ≤ p)
       conv_rhs => rw [show 2 * x / p ^ 2 = 2 * x / p ^ 2 - 1 + 1 from
         (Nat.sub_add_cancel hB).symm]
       rw [mul_add, mul_one]
-    have hle := Nat.mul_div_le (p ^ 2) (2 * x)
+    have hle := Nat.mul_div_le (2 * x) (p ^ 2)
     omega
   have hlog2 : (Nat.log 2 (p ^ 2 * (2 * x / p ^ 2 - 1) + (p ^ 2 - 1)) : ℝ) ≤
       (Nat.log 2 (2 * x) : ℝ) :=
@@ -351,7 +351,7 @@ theorem leftPairQuotCount_le_erdos (x p : ℕ) (hp : 2 ≤ p)
       ≤ 1 + (apSmoothParamCount 0 (2 * x / p ^ 2 - 1) (p ^ 2)
           (p ^ 2 - 1) p : ℝ) := by
         exact_mod_cast hsplit
-    _ ≤ _ := add_le_add_left hap 1
+    _ ≤ _ := add_le_add_right hap 1
 
 end Erdos
 
@@ -426,7 +426,7 @@ theorem rightPairQuotCount_le_two_level (x p : ℕ) (hp : 2 ≤ p) (R : ℕ) :
               1 p : ℕ) := by exact_mod_cast hsplit
         push_cast at h
         linarith
-    _ ≤ _ := add_le_add_left hap _
+    _ ≤ _ := add_le_add_right hap _
 
 /-- **Two-level bound (left).**  For every `R`, the shifted count
 `apSmoothParamCount R (B−1) (p²) (p²−1) p` has log-weight
@@ -453,7 +453,7 @@ theorem leftPairQuotCount_le_two_level (x p : ℕ) (hp : 2 ≤ p)
       conv_rhs => rw [show 2 * x / p ^ 2 = 2 * x / p ^ 2 - 1 + 1 from
         (Nat.sub_add_cancel hB).symm]
       rw [mul_add, mul_one]
-    have hle := Nat.mul_div_le (p ^ 2) (2 * x)
+    have hle := Nat.mul_div_le (2 * x) (p ^ 2)
     omega
   have hlog2 : (Nat.log 2 (p ^ 2 * (2 * x / p ^ 2 - 1) + (p ^ 2 - 1)) : ℝ) ≤
       (Nat.log 2 (2 * x) : ℝ) :=
@@ -524,7 +524,7 @@ theorem leftPairQuotCount_le_two_level (x p : ℕ) (hp : 2 ≤ p)
               (p ^ 2 - 1) p : ℕ) := by exact_mod_cast hsplit
         push_cast at h
         linarith
-    _ ≤ _ := add_le_add_left hap _
+    _ ≤ _ := add_le_add_right hap _
 
 end TwoLevel
 
