@@ -155,6 +155,6 @@ theorem badNonSingleton_interval_bound_of_runCountSum_ratio_loglog
         rw [Real.rpow_one]; ring
     _ = F * Real.log L ^ (K + 1) := by rw [← Real.rpow_add hllpos]
     _ = (badSingletonCount x : ℝ) * L ^ (-(1 : ℝ)) *
-          Real.log L ^ (K + 1) := by rw [hFdef]; ring
+          Real.log L ^ (K + 1) := by rw [hFdef]
 
 end JSP314

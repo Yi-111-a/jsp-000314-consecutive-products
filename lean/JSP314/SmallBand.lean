@@ -150,7 +150,7 @@ theorem leftRunCount_le_smoothUpTo {x p k : ℕ} (hk : 1 ≤ k) (hp : 2 ≤ p) :
   have hm2 : ∀ m ∈ leftRunWitness x p k, 2 ≤ m := by
     intro m hm
     rw [mem_leftRunWitness] at hm
-    rcases le_or_lt m 1 with h | h
+    rcases le_or_gt m 1 with h | h
     · rw [largestPrimeFactor_eq_one_iff.mpr h] at hm
       omega
     · omega
