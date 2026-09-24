@@ -232,8 +232,12 @@ theorem hN_of_runCountSum_le {CN : ℝ}
     calc (badNonSingletonCount x : ℝ)
         ≤ 2 * (runCountSum x : ℝ) + ((2 * 10 ^ 16 + 1 : ℕ) : ℝ) := hNle
       _ ≤ 2 * (A / 8) + A := by
-          simp only [hAdef, hsdef] at hx hxC ⊢
-          linarith
+          have h1 : (runCountSum x : ℝ) ≤ A / 8 := by
+            simp only [hAdef, hsdef]; exact hx
+          have h2 : ((2 * 10 ^ 16 + 1 : ℕ) : ℝ) ≤ A := by
+            simp only [hAdef, hsdef]; exact hxC
+          exact add_le_add
+            (mul_le_mul_of_nonneg_left h1 (by norm_num)) h2
       _ = A * (5 / 4) := by ring
   have hLm1 : (Real.log x) ^ (-(1 : ℝ)) * (Real.log x) ^ ε =
       (Real.log x) ^ (-(1 - ε)) := by
