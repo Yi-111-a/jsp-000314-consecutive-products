@@ -418,7 +418,7 @@ theorem smoothCount_eventually_ge_exp :
             + (u : ℝ) * Real.log (D' / (2 * (u : ℝ))) := by
         rw [Real.log_mul hwpos.ne' (pow_pos hbpos u).ne', Real.log_pow]
       have hcountpos : (0 : ℝ) < (smoothCount Y y : ℝ) := by
-        have h1 := one_le_smoothCount hY1
+        have h1 := one_le_smoothCount (Y := Y) (y := y) hY1
         exact_mod_cast h1
       have hlogcount : Real.log ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ)
           + (u : ℝ) * Real.log (D' / (2 * (u : ℝ))) ≤ Real.log (smoothCount Y y : ℝ) := by
@@ -540,7 +540,7 @@ theorem smoothCount_eventually_ge_exp :
         have h1 := mul_le_mul_of_nonneg_left hlogu_ge (Nat.cast_nonneg u : (0 : ℝ) ≤ u)
         nlinarith [h1, hule, hLu]
       have hcnt : (1 : ℝ) ≤ (smoothCount Y y : ℝ) := by
-        have h1 := one_le_smoothCount hY1
+        have h1 := one_le_smoothCount (Y := Y) (y := y) hY1
         exact_mod_cast h1
       calc (Y : ℝ) * Real.exp (-(u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ)))
             - 7 * (u : ℝ))

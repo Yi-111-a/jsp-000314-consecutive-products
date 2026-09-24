@@ -205,8 +205,9 @@ theorem rightRunCount_le_div (x p k : ℕ) (hp : p.Prime) :
     rw [Finset.mem_coe, mem_rightRunWitness] at ha hb
     have h1 := Nat.div_mul_cancel ha.2.1
     have h2 := Nat.div_mul_cancel hb.2.1
+    have hab' : a / p ^ 2 = b / p ^ 2 := hab
     calc a = a / p ^ 2 * p ^ 2 := h1.symm
-      _ = b / p ^ 2 * p ^ 2 := by rw [hab]
+      _ = b / p ^ 2 * p ^ 2 := by rw [hab']
       _ = b := h2
   calc rightRunCount x p k = (rightRunWitness x p k).card := rfl
     _ ≤ (Finset.Icc 1 (2 * x / p ^ 2)).card :=
@@ -235,8 +236,9 @@ theorem leftRunCount_le_div (x p k : ℕ) (hp : p.Prime) :
     rw [Finset.mem_coe, mem_leftRunWitness] at ha hb
     have h1 := Nat.div_mul_cancel ha.2.1
     have h2 := Nat.div_mul_cancel hb.2.1
+    have hab' : a / p ^ 2 = b / p ^ 2 := hab
     calc a = a / p ^ 2 * p ^ 2 := h1.symm
-      _ = b / p ^ 2 * p ^ 2 := by rw [hab]
+      _ = b / p ^ 2 * p ^ 2 := by rw [hab']
       _ = b := h2
   calc leftRunCount x p k = (leftRunWitness x p k).card := rfl
     _ ≤ (Finset.Icc 1 (2 * x / p ^ 2)).card :=
