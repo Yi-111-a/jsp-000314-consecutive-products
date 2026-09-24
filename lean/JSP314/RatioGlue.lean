@@ -6,7 +6,7 @@ import Mathlib.Tactic
 /-!
 # JSP-000314 — ratio-form conditional closure for `badNonSingleton_interval_bound`
 
-The single remaining `sorry` of the project (`JSP314/Main.lean`,
+The single remaining placeholder of the project (`JSP314/Main.lean`,
 `badNonSingleton_interval_bound`) is reduced here to a clean **ratio-shaped**
 obligation on the combinatorial run-count sum `BandSum.runCountSum`:
 
