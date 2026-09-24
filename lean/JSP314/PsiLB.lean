@@ -56,7 +56,7 @@ def smoothCount (Y y : ℕ) : ℕ :=
 theorem one_le_smoothCount {Y y : ℕ} (hY : 1 ≤ Y) : 1 ≤ smoothCount Y y := by
   apply Finset.card_pos.mpr
   exact ⟨1, Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨le_refl 1, hY⟩,
-    fun p hp => by simp only [Nat.primeFactors_one, Finset.not_mem_empty] at hp⟩⟩
+    fun p hp => by simp only [Nat.primeFactors_one, Finset.notMem_empty] at hp⟩⟩
 
 /-- If `Y ≤ y`, every `m ∈ [1, Y]` is `y`-smooth. -/
 theorem smoothCount_eq_self {Y y : ℕ} (h : Y ≤ y) : smoothCount Y y = Y := by
@@ -205,7 +205,7 @@ theorem smoothCount_ge_min_mul_choose {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u �
     exact Prod.ext_iff.mpr ⟨hrr, rfl⟩
   have hcard : S.card = w * (D.card.choose u) := by
     rw [hSdef, Finset.card_product, Finset.card_powersetCard, Nat.card_Icc,
-      show w + 1 - 1 = w from by omega]
+      Nat.add_sub_cancel w 1]
   calc w * (D.card.choose u) = S.card := hcard.symm
     _ = (S.image f).card := (Finset.card_image_of_injOn hinj).symm
     _ ≤ smoothCount Y y := Finset.card_le_card hsub
@@ -215,7 +215,7 @@ theorem smoothCount_ge_min_mul_choose {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u �
 `w · (D' / (2u))^u ≤ smoothCount Y y`. -/
 theorem smoothCount_ge_min_mul_div_pow {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u ≤ Y)
     (h2u : 2 * u ≤ (SmoothLB.dyadicPrimes (y / 2)).card) :
-    (min (Y / y ^ u) (y / 2) : ℝ) *
+    ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ) *
       (((SmoothLB.dyadicPrimes (y / 2)).card : ℝ) / (2 * u)) ^ u
         ≤ (smoothCount Y y : ℝ) := by
   have h := smoothCount_ge_min_mul_choose hY hu
@@ -224,17 +224,17 @@ theorem smoothCount_ge_min_mul_div_pow {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u 
   have heq : (((SmoothLB.dyadicPrimes (y / 2)).card : ℝ) / (2 * u)) ^ u
       = (((SmoothLB.dyadicPrimes (y / 2)).card : ℝ) / 2) ^ u / (u : ℝ) ^ u := by
     rw [div_pow, mul_pow, div_pow, div_div]
-  calc (min (Y / y ^ u) (y / 2) : ℝ) *
+  calc ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ) *
           (((SmoothLB.dyadicPrimes (y / 2)).card : ℝ) / (2 * u)) ^ u
-      = (min (Y / y ^ u) (y / 2) : ℝ) *
+      = ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ) *
           ((((SmoothLB.dyadicPrimes (y / 2)).card : ℝ) / 2) ^ u / (u : ℝ) ^ u) := by
         rw [heq]
-    _ ≤ (min (Y / y ^ u) (y / 2) : ℝ) *
+    _ ≤ ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ) *
           (((SmoothLB.dyadicPrimes (y / 2)).card.choose u : ℕ) : ℝ) :=
-        mul_le_mul_of_nonneg_left hc (Nat.cast_nonneg _)
+        mul_le_mul_of_nonneg_left hc (by positivity)
     _ = ((min (Y / y ^ u) (y / 2) *
           (SmoothLB.dyadicPrimes (y / 2)).card.choose u : ℕ) : ℝ) := by
-        push_cast; ring
+        rw [Nat.cast_mul]
     _ ≤ (smoothCount Y y : ℝ) := by exact_mod_cast h
 
 /-- `y ↦ y / 2` tends to `∞`. -/
@@ -273,7 +273,7 @@ theorem eventually_dyadicPrimes_half_card_ge : ∀ᶠ y : ℕ in Filter.atTop,
 /-- `(log y)² ≤ y / 64` eventually (from `log = o(·^{1/2})`). -/
 theorem eventually_log_sq_le : ∀ᶠ y : ℕ in Filter.atTop,
     (Real.log (y : ℝ)) ^ 2 ≤ (y : ℝ) / 64 := by
-  have h := (Real.isLittleO_log_rpow_atTop (show (0 : ℝ) < 1 / 2 by norm_num)).comp_tendsto
+  have h := (isLittleO_log_rpow_atTop (show (0 : ℝ) < 1 / 2 by norm_num)).comp_tendsto
     tendsto_natCast_atTop_atTop
   rw [Asymptotics.isLittleO_iff] at h
   have h1 := h (show (0 : ℝ) < (1 / 8 : ℝ) by norm_num)
@@ -291,10 +291,10 @@ theorem eventually_log_sq_le : ∀ᶠ y : ℕ in Filter.atTop,
         pow_le_pow_left₀ hlog (by linarith [hy]) _
     _ = (y : ℝ) / 64 := by rw [div_pow, hsq]; ring
 
+set_option maxHeartbeats 800000 in
 /-- **Asymptotic lower bound.**  For `y` large and every `Y`, with
 `u = ⌊log Y / log y⌋₊`,
 `Y · exp(-u·(log u + log log y) - 7u) ≤ smoothCount Y y`. -/
-set_option maxHeartbeats 800000 in
 theorem smoothCount_eventually_ge_exp :
     ∃ B : ℕ, ∀ Y y : ℕ, B ≤ y →
       (Y : ℝ) * Real.exp
@@ -331,7 +331,7 @@ theorem smoothCount_eventually_ge_exp :
     push_cast
     linarith [Real.log_two_lt_d9]
   have hlog2 : Real.log 2 < (0.7 : ℝ) := by linarith [Real.log_two_lt_d9]
-  rcases le_or_lt Y y with hYy | hYy
+  rcases le_or_gt Y y with hYy | hYy
   · -- `Y ≤ y`: every `m ≤ Y` is `y`-smooth, and the bound is `≤ Y`.
     rw [smoothCount_eq_self hYy]
     have hlogu : 0 ≤ Real.log (u : ℝ) := by
@@ -413,15 +413,15 @@ theorem smoothCount_eventually_ge_exp :
       have hbpos : (0 : ℝ) < D' / (2 * (u : ℝ)) := div_pos hD'pos h2upos
       have hwpos0 : 1 ≤ min (Y / y ^ u) (y / 2) :=
         le_min (Nat.div_pos hYu (pow_pos (show 0 < y by omega) u)) (by omega)
-      have hwpos : (0 : ℝ) < (min (Y / y ^ u) (y / 2) : ℝ) := by exact_mod_cast hwpos0
-      have hlogprod : Real.log ((min (Y / y ^ u) (y / 2) : ℝ) * (D' / (2 * (u : ℝ))) ^ u)
-          = Real.log (min (Y / y ^ u) (y / 2) : ℝ)
+      have hwpos : (0 : ℝ) < ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ) := by exact_mod_cast hwpos0
+      have hlogprod : Real.log (((min (Y / y ^ u) (y / 2) : ℕ) : ℝ) * (D' / (2 * (u : ℝ))) ^ u)
+          = Real.log ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ)
             + (u : ℝ) * Real.log (D' / (2 * (u : ℝ))) := by
         rw [Real.log_mul hwpos.ne' (pow_pos hbpos u).ne', Real.log_pow]
       have hcountpos : (0 : ℝ) < (smoothCount Y y : ℝ) := by
         have h1 := one_le_smoothCount hY1
         exact_mod_cast h1
-      have hlogcount : Real.log (min (Y / y ^ u) (y / 2) : ℝ)
+      have hlogcount : Real.log ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ)
           + (u : ℝ) * Real.log (D' / (2 * (u : ℝ))) ≤ Real.log (smoothCount Y y : ℝ) := by
         have e := Real.log_le_log (mul_pos hwpos (pow_pos hbpos u)) h3
         rwa [hlogprod] at e

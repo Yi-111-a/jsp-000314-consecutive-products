@@ -389,7 +389,7 @@ theorem badSingletonCount_eventually_ge_zscale_two :
   have hu_Lt : (u : ℝ) ≤ L / t := by
     calc (u : ℝ) ≤ (L - 4) / (t + 2) := hu_le
       _ ≤ L / t := by
-          rw [div_le_div_iff (by linarith : (0 : ℝ) < t + 2) ht_pos]
+          rw [div_le_div_iff₀ (by linarith : (0 : ℝ) < t + 2) ht_pos]
           nlinarith [hLpos, ht_pos]
   have hu_le_L : (u : ℝ) ≤ L := by
     have h : L / t ≤ L := by
@@ -424,7 +424,10 @@ theorem badSingletonCount_eventually_ge_zscale_two :
       _ = L * L2 / t := by ring
       _ = Real.sqrt 2 * A := hLt_eq
   have hu_s : (u : ℝ) ≤ Real.sqrt 2 * A / L2 := by rwa [hL_t] at hu_Lt
-  have h4u : 4 * (u : ℝ) ≤ 4 * Real.sqrt 2 * A / L2 := by linarith [hu_s]
+  have h4u : 4 * (u : ℝ) ≤ 4 * Real.sqrt 2 * A / L2 := by
+    calc 4 * (u : ℝ) ≤ 4 * (Real.sqrt 2 * A / L2) :=
+          mul_le_mul_of_nonneg_left hu_s (by norm_num)
+      _ = 4 * Real.sqrt 2 * A / L2 := by ring
   -- numerator bound: `t + u·t ≥ L − √2·A − 2√2·A/L2 − 4`
   have hnum : L - Real.sqrt 2 * A - 2 * Real.sqrt 2 * A / L2 - 4
       ≤ t + (u : ℝ) * t := by
@@ -441,7 +444,8 @@ theorem badSingletonCount_eventually_ge_zscale_two :
             div_le_div₀ (by linarith) (by linarith) (by linarith) le_rfl
         _ ≤ 2 * L / t := div_le_div₀ (by linarith) le_rfl ht_pos (by linarith)
         _ = 2 * Real.sqrt 2 * A / L2 := by
-            rw [mul_div_assoc, hL_t, mul_div_assoc]
+            rw [show 2 * L / t = 2 * (L / t) from by ring, hL_t]
+            ring
     linarith [hwt, hut, hfrac, h2t]
   -- denominator bound: `(16(t+1))^u·u^u ≤ (32L)^u`
   have hupos_or : (0 : ℝ) < (u : ℝ) ^ u := by
@@ -544,7 +548,19 @@ theorem badSingletonCount_eventually_ge_zscale_two :
   have hCA : C * A = ε * A + 2 * Real.sqrt 2 * A := by rw [hεdef]; ring
   have hfin : (L - C * A) + (L2 + Real.sqrt 2 * A + 4 * Real.sqrt 2 * A / L2)
       ≤ t + (u : ℝ) * t := by
-    linarith [hnum, hslack, hCA]
+    have key : L2 + 2 * Real.sqrt 2 * A + 6 * Real.sqrt 2 * A / L2 + 4 ≤ C * A := by
+      calc L2 + 2 * Real.sqrt 2 * A + 6 * Real.sqrt 2 * A / L2 + 4
+          = (L2 + 6 * Real.sqrt 2 * A / L2 + 4) + 2 * Real.sqrt 2 * A := by ring
+        _ ≤ ε * A + 2 * Real.sqrt 2 * A := add_le_add hslack le_rfl
+        _ = C * A := by rw [← hCA]
+    have e1 : (L - C * A) + (L2 + Real.sqrt 2 * A + 4 * Real.sqrt 2 * A / L2)
+        ≤ L - Real.sqrt 2 * A - 2 * Real.sqrt 2 * A / L2 - 4 := by
+      rw [← sub_nonpos]
+      calc (L - C * A) + (L2 + Real.sqrt 2 * A + 4 * Real.sqrt 2 * A / L2)
+            - (L - Real.sqrt 2 * A - 2 * Real.sqrt 2 * A / L2 - 4)
+          = (L2 + 2 * Real.sqrt 2 * A + 6 * Real.sqrt 2 * A / L2 + 4) - C * A := by ring
+        _ ≤ 0 := sub_nonpos.mpr key
+    exact e1.trans hnum
   -- final assembly
   have hDpos : (0 : ℝ) < 4 * (t + 2) * (32 * L) ^ u :=
     mul_pos (mul_pos (by norm_num) (by linarith [ht_pos]))

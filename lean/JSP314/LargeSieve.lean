@@ -136,7 +136,7 @@ lemma intDist_neg (β : ℝ) : intDist (-β) = intDist β := by
   show |(-β) - round (-β)| = |β - round β|
   rw [abs_sub_round_eq_min, abs_sub_round_eq_min]
   rcases eq_or_ne (Int.fract β) 0 with h0 | h0
-  · rw [Int.fract_neg_eq_zero.mpr h0, h0]; simp
+  · rw [Int.fract_neg_eq_zero.mpr h0, h0]
   · rw [Int.fract_neg h0, sub_sub_cancel, min_comm]
 
 lemma intDist_add_int (β : ℝ) (n : ℤ) : intDist (β + n) = intDist β := by
@@ -249,7 +249,7 @@ lemma four_mul_intDist_le_norm_e_sub_one (β : ℝ) :
   have hpi : |Real.pi * θ| ≤ Real.pi := by
     rw [abs_mul, abs_of_pos Real.pi_pos]
     nlinarith [hθle, Real.pi_pos]
-  rw [← Real.abs_sin_eq_sin_abs_of_abs_le_pi hpi, abs_mul,
+  rw [Real.abs_sin_eq_sin_abs_of_abs_le_pi hpi, abs_mul,
     abs_of_pos Real.pi_pos]
   have hsin2 : 2 * |θ| ≤ Real.sin (Real.pi * |θ|) := by
     have h := Real.mul_le_sin (mul_nonneg Real.pi_pos.le (abs_nonneg θ))

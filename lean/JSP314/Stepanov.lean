@@ -28,7 +28,7 @@ lemma hasseDeriv_frobenius_pow {k j : ℕ} (hk : 0 < k) (hkp : k < p) :
   have hdvd : p ∣ (j * p).choose k := by
     have hLuc :=
       Choose.choose_modEq_choose_mod_mul_choose_div_nat (n := j * p) (k := k) (p := p)
-    rw [Nat.mul_mod_right, Nat.mod_eq_of_lt hkp, Nat.choose_eq_zero_of_lt hk, zero_mul] at hLuc
+    rw [Nat.mul_mod_left, Nat.mod_eq_of_lt hkp, Nat.choose_eq_zero_of_lt hk, zero_mul] at hLuc
     exact Nat.modEq_zero_iff_dvd.mp hLuc
   have hX : (X : (ZMod p)[X]) ^ (j * p) = monomial (j * p) 1 := by
     rw [← monomial_one_one_eq_X, monomial_pow, one_pow, one_mul]
@@ -46,11 +46,11 @@ lemma pow_sub_hasseDeriv_dvd_pow (f : (ZMod p)[X]) {k M : ℕ} (h : k ≤ M) :
     rw [pow_succ', hasseDeriv_mul]
     apply Finset.dvd_sum
     rintro ⟨i, j⟩ hij
-    rw [Finset.mem_antidiagonal] at hij
+    rw [Finset.HasAntidiagonal.mem_antidiagonal] at hij
     rcases Nat.eq_zero_or_pos i with hi | hi
     · subst hi
       simp only [zero_add] at hij
-      subst hij
+      subst j
       rw [hasseDeriv_zero']
       by_cases hkM : k ≤ M
       · have hd := ih hkM
@@ -62,7 +62,7 @@ lemma pow_sub_hasseDeriv_dvd_pow (f : (ZMod p)[X]) {k M : ℕ} (h : k ≤ M) :
     · have hj : j ≤ M := by omega
       have hd := ih hj
       have hle : M + 1 - k ≤ M - j := by omega
-      exact (pow_dvd_pow f hle).trans (dvd_mul_of_dvd_left hd _)
+      exact (pow_dvd_pow f hle).trans (dvd_mul_of_dvd_right hd _)
 
 /-- A polynomial over `ZMod p` vanishing at every `x : ZMod p` is
 divisible by `X^p - X`. -/
@@ -79,7 +79,7 @@ lemma dvd_pow_card_sub_X_iff_vanish (S : (ZMod p)[X]) :
       have hr := FiniteField.roots_X_pow_card_sub_X (ZMod p)
       rwa [ZMod.card p] at hr
     have hprod : (X ^ p - X : (ZMod p)[X]) = ∏ x : ZMod p, (X - C x) := by
-      have hcard : Multiset.card (roots (X ^ p - X : (ZMod p)[X])) = (X ^ p - X).natDegree := by
+      have hcard : Multiset.card (roots (X ^ p - X : (ZMod p)[X])) = (X ^ p - X : (ZMod p)[X]).natDegree := by
         rw [hroots, ← Finset.card_def, Finset.card_univ, ZMod.card p,
           FiniteField.X_pow_card_sub_X_natDegree_eq (ZMod p) hp1]
       have hmonic : (X ^ p - X : (ZMod p)[X]).Monic :=
@@ -128,7 +128,8 @@ lemma card_le_natDegree_of_hasseDeriv_vanish (r : (ZMod p)[X]) (hr : r ≠ 0)
     · intro x hx
       exact pow_dvd_of_hasseDeriv_eval_eq_zero p r x M (h x hx)
   have hdeg : (∏ x ∈ T, (X - C x) ^ M : (ZMod p)[X]).natDegree = M * T.card := by
-    rw [natDegree_prod (fun x _ => pow_ne_zero M (monic_X_sub_C x).ne_zero)]
+    rw [natDegree_prod T (fun x ↦ (X - C x) ^ M)
+      (fun x _ ↦ pow_ne_zero M (monic_X_sub_C x).ne_zero)]
     simp_rw [(monic_X_sub_C _).natDegree_pow, natDegree_X_sub_C, mul_one]
     rw [Finset.sum_const, smul_eq_mul, mul_comm]
   calc M * T.card = (∏ x ∈ T, (X - C x) ^ M : (ZMod p)[X]).natDegree := hdeg.symm

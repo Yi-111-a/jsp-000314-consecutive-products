@@ -85,7 +85,7 @@ among `m + 1, …, m + q` some `m + j` is divisible by `q`, forcing
 theorem rightRunCount_eq_zero_of_prime_between {x p k q : ℕ} (hp : p.Prime)
     (hq : q.Prime) (hpq : p < q) (hqk : q ≤ k) :
     rightRunCount x p k = 0 := by
-  rw [rightRunCount, Finset.card_eq_zero, Finset.eq_empty_iff_forall_not_mem]
+  rw [rightRunCount, Finset.card_eq_zero, Finset.eq_empty_iff_forall_notMem]
   intro m hm
   rw [mem_rightRunWitness] at hm
   obtain ⟨hm2x, hpdvd, hlpf, harc⟩ := hm
@@ -96,8 +96,18 @@ theorem rightRunCount_eq_zero_of_prime_between {x p k q : ℕ} (hp : p.Prime)
   have hj1 : 1 ≤ j := by omega
   have hjq : j ≤ q := by omega
   have hdvd : q ∣ m + j := by
-    refine ⟨m / q + 1, ?_⟩
-    omega
+    rcases eq_or_ne (m % q) 0 with hmz | hmz
+    · have hjq : j = q := by rw [hjdef, hmz, Nat.sub_zero]
+      rw [hjq]
+      exact dvd_add (Nat.dvd_of_mod_eq_zero hmz) (dvd_refl q)
+    · have hpos : 0 < m % q := Nat.pos_of_ne_zero hmz
+      have hle : m % q ≤ m := Nat.mod_le m q
+      have h1 : m + j = m - m % q + q := by omega
+      rw [h1]
+      apply dvd_add _ (dvd_refl q)
+      refine ⟨m / q, ?_⟩
+      have hdm := Nat.div_add_mod m q
+      omega
   have hmem : m + j ∈ Finset.Icc (m + 1) (m + k) := by
     rw [Finset.mem_Icc]
     omega
@@ -113,7 +123,7 @@ multiple `j` of `q` lies in `{m - q, …, m - 1} ⊆ {m - k, …, m - 1}` with
 theorem leftRunCount_eq_zero_of_prime_between {x p k q : ℕ} (hp : p.Prime)
     (hq : q.Prime) (hpq : p < q) (hqk : q ≤ k) (hq2 : q ≤ p ^ 2) :
     leftRunCount x p k = 0 := by
-  rw [leftRunCount, Finset.card_eq_zero, Finset.eq_empty_iff_forall_not_mem]
+  rw [leftRunCount, Finset.card_eq_zero, Finset.eq_empty_iff_forall_notMem]
   intro m hm
   rw [mem_leftRunWitness] at hm
   obtain ⟨hm2x, hpdvd, hlpf, harc⟩ := hm
@@ -150,7 +160,7 @@ theorem leftRunCount_eq_zero_of_prime_between {x p k q : ℕ} (hp : p.Prime)
   have hmem : j ∈ Finset.Icc (m - k) (m - 1) :=
     Finset.mem_Icc.mpr ⟨hjlo, hjle⟩
   have hle := harc j hmem
-  have hqle := prime_dvd_le_largestPrimeFactor (by omega : 2 ≤ j) hq
+  have hqle := prime_dvd_le_largestPrimeFactor (hq.two_le.trans hjge) hq
     (dvd_mul_right q _)
   omega
 
@@ -195,11 +205,13 @@ theorem rightRunCount_le_div (x p k : ℕ) (hp : p.Prime) :
     rw [Finset.mem_coe, mem_rightRunWitness] at ha hb
     have h1 := Nat.div_mul_cancel ha.2.1
     have h2 := Nat.div_mul_cancel hb.2.1
-    omega
+    calc a = a / p ^ 2 * p ^ 2 := h1.symm
+      _ = b / p ^ 2 * p ^ 2 := by rw [hab]
+      _ = b := h2
   calc rightRunCount x p k = (rightRunWitness x p k).card := rfl
     _ ≤ (Finset.Icc 1 (2 * x / p ^ 2)).card :=
         Finset.card_le_card_of_injOn _ hmaps hinj
-    _ = 2 * x / p ^ 2 := by rw [Nat.card_Icc]; omega
+    _ = 2 * x / p ^ 2 := by rw [Nat.card_Icc, Nat.add_sub_cancel]
 
 /-- `leftRunCount x p k ≤ 2x / p²`. -/
 theorem leftRunCount_le_div (x p k : ℕ) (hp : p.Prime) :
@@ -223,11 +235,13 @@ theorem leftRunCount_le_div (x p k : ℕ) (hp : p.Prime) :
     rw [Finset.mem_coe, mem_leftRunWitness] at ha hb
     have h1 := Nat.div_mul_cancel ha.2.1
     have h2 := Nat.div_mul_cancel hb.2.1
-    omega
+    calc a = a / p ^ 2 * p ^ 2 := h1.symm
+      _ = b / p ^ 2 * p ^ 2 := by rw [hab]
+      _ = b := h2
   calc leftRunCount x p k = (leftRunWitness x p k).card := rfl
     _ ≤ (Finset.Icc 1 (2 * x / p ^ 2)).card :=
         Finset.card_le_card_of_injOn _ hmaps hinj
-    _ = 2 * x / p ^ 2 := by rw [Nat.card_Icc]; omega
+    _ = 2 * x / p ^ 2 := by rw [Nat.card_Icc, Nat.add_sub_cancel]
 
 /-! ## The band split -/
 

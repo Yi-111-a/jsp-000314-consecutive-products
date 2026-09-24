@@ -43,7 +43,7 @@ theorem findWit_spec {n k m q : ℕ} (h : findWit n k = some (m, q)) :
   unfold findWit at h
   rw [Option.map_eq_some_iff] at h
   obtain ⟨q', hq', hpair⟩ := h
-  obtain ⟨hm, hq⟩ := Prod.mk.inj_iff.mp hpair
+  injection hpair with hm hq
   subst hm
   subst hq
   have hcond := List.find?_some hq'

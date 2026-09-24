@@ -560,7 +560,7 @@ theorem theta_le_explicit (n : ℕ) :
           rw [div_pow, one_pow, div_eq_mul_inv, ← inv_pow]
       _ = (n : ℝ) * ((1 - (1 / 6 : ℝ) ^ t) / (1 - 1 / 6)) := by
           congr 1
-          rw [Finset.geom_sum_eq (by norm_num : (1 / 6 : ℝ) ≠ 1)]
+          rw [geom_sum_eq (by norm_num : (1 / 6 : ℝ) ≠ 1)]
           field
       _ ≤ (n : ℝ) * (6 / 5 : ℝ) := by
           apply mul_le_mul_of_nonneg_left _ (by positivity)
