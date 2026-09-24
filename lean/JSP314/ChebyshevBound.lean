@@ -71,8 +71,7 @@ lemma log_factorial_eq (k : ℕ) :
   have h2 : ∑ j ∈ Finset.range k,
         (((j + 1 : ℕ) : ℝ) * Real.log (j + 1 : ℕ) - (j : ℝ) * Real.log j) =
       (k : ℝ) * Real.log k := by
-    rw [Finset.sum_range_sub]
-    simp
+    simpa using Finset.sum_range_sub (fun j : ℕ ↦ (j : ℝ) * Real.log j) k
   have h3 : ∑ j ∈ Finset.range k,
         (Real.log (j + 1 : ℝ) -
           (((j + 1 : ℕ) : ℝ) * Real.log (j + 1 : ℕ) - (j : ℝ) * Real.log j - 1)) =
@@ -80,9 +79,14 @@ lemma log_factorial_eq (k : ℕ) :
         ∑ j ∈ Finset.range k,
           (((j + 1 : ℕ) : ℝ) * Real.log (j + 1 : ℕ) - (j : ℝ) * Real.log j) +
         (k : ℝ) := by
-    rw [← Finset.sum_add_distrib]
-    refine Finset.sum_congr rfl fun j _ ↦ ?_
-    ring
+    have e : ∀ j : ℕ, Real.log (j + 1 : ℝ) -
+          (((j + 1 : ℕ) : ℝ) * Real.log (j + 1 : ℕ) - (j : ℝ) * Real.log j - 1) =
+        (Real.log (j + 1 : ℝ) -
+          (((j + 1 : ℕ) : ℝ) * Real.log (j + 1 : ℕ) - (j : ℝ) * Real.log j)) + 1 :=
+      fun j ↦ by ring
+    rw [Finset.sum_congr rfl fun j _ ↦ e j, Finset.sum_add_distrib,
+      Finset.sum_sub_distrib]
+    simp
   rw [h3, h1, h2]
   ring
 
@@ -113,9 +117,10 @@ lemma cheb_delta_bounds {j : ℕ} (hj : 1 ≤ j) :
     rw [hd_log]
     have h : Real.log ((j : ℝ) / (j + 1 : ℝ)) ≤ (j : ℝ) / (j + 1 : ℝ) - 1 :=
       Real.log_le_sub_one_of_pos (by positivity)
-    have h2 : (j : ℝ) / (j + 1 : ℝ) - 1 = -1 / (j + 1 : ℝ) := by field
+    have h2 : (j : ℝ) / (j + 1 : ℝ) - 1 = -(1 / (j + 1 : ℝ)) := by field
     have h3 : Real.log ((j + 1 : ℝ) / j) = -Real.log ((j : ℝ) / (j + 1 : ℝ)) := by
-      rw [← Real.log_inv, ← Real.log_div hj1.ne' hj0, inv_div]
+      rw [← Real.log_inv, inv_div]
+    rw [h2] at h
     rw [h3]
     linarith
   rw [hdeq]
@@ -124,9 +129,9 @@ lemma cheb_delta_bounds {j : ℕ} (hj : 1 ≤ j) :
       apply mul_le_mul_of_nonneg_left hd_le hjp.le
     rw [mul_one_div_cancel hj0] at this
     linarith
-  · have : (j : ℝ) / (j + 1 : ℝ) ≤ j * d := by
-      have h := mul_le_mul_of_nonneg_left hd_ge hjp.le
-      rwa [div_mul_cancel₀ _ hj1.ne'] at h
+  · have hjd : (j : ℝ) * (1 / (j + 1 : ℝ)) ≤ j * d :=
+      mul_le_mul_of_nonneg_left hd_ge hjp.le
+    have he : 1 - (j : ℝ) * (1 / (j + 1 : ℝ)) = 1 / (j + 1 : ℝ) := by field
     linarith
 
 lemma sum_inv_le_log (k : ℕ) :
@@ -140,14 +145,13 @@ lemma sum_inv_le_log (k : ℕ) :
     · have hjp : (0 : ℝ) < j := by exact_mod_cast Nat.pos_of_ne_zero hj
       have h1 : Real.log ((j : ℝ) / (j + 1 : ℝ)) ≤ (j : ℝ) / (j + 1 : ℝ) - 1 :=
         Real.log_le_sub_one_of_pos (by positivity)
-      have h2 : (j : ℝ) / (j + 1 : ℝ) - 1 = -1 / (j + 1 : ℝ) := by field
+      have h2 : (j : ℝ) / (j + 1 : ℝ) - 1 = -(1 / (j + 1 : ℝ)) := by field
+      rw [h2] at h1
       have h3 : Real.log (j + 1 : ℝ) - Real.log (j : ℝ) =
           -Real.log ((j : ℝ) / (j + 1 : ℝ)) := by
-        rw [Real.log_div (by positivity) hjp.ne',
-          Real.log_div hjp.ne' (by positivity)]
+        rw [Real.log_div hjp.ne' (by positivity)]
         ring
-      simp [hj]
-      rw [h3]
+      rw [if_neg hj, zero_add, h3]
       linarith
   calc ∑ j ∈ Finset.range k, (1 : ℝ) / (j + 1 : ℝ)
       ≤ ∑ j ∈ Finset.range k,
@@ -158,8 +162,14 @@ lemma sum_inv_le_log (k : ℕ) :
           ∑ j ∈ Finset.range k, (Real.log (j + 1 : ℝ) - Real.log (j : ℝ)) :=
         Finset.sum_add_distrib
     _ ≤ 1 + Real.log k := by
-        rw [Finset.sum_ite_eq' _ _ (fun _ ↦ (1 : ℝ)), Finset.sum_range_sub]
-        simp
+        have htele : ∑ j ∈ Finset.range k,
+            (Real.log (j + 1 : ℝ) - Real.log (j : ℝ)) = Real.log k := by
+          have h := Finset.sum_range_sub (fun j : ℕ ↦ Real.log (j : ℝ)) k
+          simp only [Nat.cast_zero, Real.log_zero, sub_zero] at h
+          rw [← h]
+          refine Finset.sum_congr rfl fun j _ ↦ ?_
+          rw [Nat.cast_add_one]
+        rw [Finset.sum_ite_eq' _ _ (fun _ ↦ (1 : ℝ)), htele]
         split_ifs <;> simp
 
 lemma log_factorial_lower (k : ℕ) :
@@ -192,7 +202,7 @@ lemma log_factorial_upper (k : ℕ) :
             (((j + 1 : ℕ) : ℝ) * Real.log (j + 1 : ℕ) - (j : ℝ) * Real.log j - 1))
       ≤ (k : ℝ) * Real.log k - k +
           ∑ j ∈ Finset.range k, (1 : ℝ) / (j + 1 : ℝ) := by
-        gcongr
+        apply add_le_add_left
         exact Finset.sum_le_sum fun j _ ↦ hδ j
     _ ≤ (k : ℝ) * Real.log k - k + (1 + Real.log k) := by
         gcongr
