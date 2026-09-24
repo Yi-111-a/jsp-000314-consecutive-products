@@ -117,7 +117,7 @@ lemma pow_dvd_of_hasseDeriv_eval_eq_zero (r : (ZMod p)[X]) (x₀ : ZMod p) (M : 
 at each point of a finite set `T ⊆ ZMod p`, then `M * #T ≤ r.natDegree`
 provided `r ≠ 0`. -/
 lemma card_le_natDegree_of_hasseDeriv_vanish (r : (ZMod p)[X]) (hr : r ≠ 0)
-    (M : ℕ) (hM : 0 < M) (T : Finset (ZMod p))
+    (M : ℕ) (_hM : 0 < M) (T : Finset (ZMod p))
     (h : ∀ x₀ ∈ T, ∀ j < M, (hasseDeriv j r).eval x₀ = 0) :
     M * T.card ≤ r.natDegree := by
   have hdvd : (∏ x ∈ T, (X - C x) ^ M : (ZMod p)[X]) ∣ r := by

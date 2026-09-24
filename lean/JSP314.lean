@@ -40,20 +40,22 @@ import JSP314.Assembly
 import JSP314.BandSum
 import JSP314.Assault
 import JSP314.Bounds
--- import JSP314.ChebyshevBound  -- excluded: telescoping proofs broken (repair pending)
+import JSP314.ChebyshevBound
 import JSP314.Dominant
 import JSP314.FreshEye
 import JSP314.FreshEye2
 import JSP314.FundamentalLemma
 import JSP314.HalaszMontgomery
--- import JSP314.LargeSieve  -- excluded: broken (conj/intDist API), repair pending
+import JSP314.LargeSieve
 import JSP314.MidBand
 import JSP314.RatioGlue
 import JSP314.RunMultiplicity
--- import JSP314.SSCheck  -- excluded: broken (Prod.mk.inj_iff API), repair pending
+import JSP314.SSCheck
 import JSP314.ShortCount
 import JSP314.ShortRefine
 import JSP314.SmallBand
 import JSP314.SmoothLB3
--- import JSP314.Stepanov  -- excluded: broken (choose/antidiagonal API), repair pending
+import JSP314.Stepanov
 import JSP314.SylvesterSchur
+import JSP314.SmoothLB4
+import JSP314.SharpSqueeze

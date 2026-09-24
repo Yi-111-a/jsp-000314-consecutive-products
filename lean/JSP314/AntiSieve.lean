@@ -831,14 +831,12 @@ theorem coprime_of_mul_modEq {K a b c : ℕ} (hK : 0 < K)
       Nat.dvd_gcd hg1c (Nat.gcd_dvd_right a K)
     rw [hc] at hd
     show Nat.gcd a K = 1
-    have hle := Nat.le_of_dvd one_pos hd
-    omega
+    exact Nat.dvd_one.mp hd
   · have hd : Nat.gcd b K ∣ Nat.gcd c K :=
       Nat.dvd_gcd hg2c (Nat.gcd_dvd_right b K)
     rw [hc] at hd
     show Nat.gcd b K = 1
-    have hle := Nat.le_of_dvd one_pos hd
-    omega
+    exact Nat.dvd_one.mp hd
 
 /-- **Cancellation in a general invertible class**: if `q·m₁` and `q·m₂`
 are both `≡ c (mod K)` with `gcd(c, K) = 1` then `m₁ ≡ m₂ (mod K)`
@@ -867,7 +865,7 @@ theorem modEq_of_mul_modEq_of_coprime {K q c m₁ m₂ : ℕ} (hK : 0 < K)
 (for `1 ≤ a`).  Proved by telescoping `1/(n) ≤ log n − log (n−1)`. -/
 theorem sum_Ioc_inv_le_log_sub_log {a b : ℕ} (ha : 1 ≤ a) :
     ∑ n ∈ Finset.Icc (a + 1) b, (1 : ℝ) / n ≤ Real.log b - Real.log a := by
-  rcases le_or_lt b a with hba | hab
+  rcases le_or_gt b a with hba | hab
   · rw [Finset.Icc_eq_empty (by omega : b < a + 1), Finset.sum_empty]
     rcases Nat.eq_zero_or_pos b with hb | hb
     · subst hb
@@ -975,12 +973,16 @@ theorem smoothCongruentOneLpfBand_card_eq_sum (N p a b : ℕ) :
       · exact Finset.mem_filter.mpr
           ⟨Nat.mem_primesLE.mpr ⟨hgb, largestPrimeFactor_prime hs2⟩, hga⟩
       · exact Finset.mem_filter.mpr ⟨hsmem, rfl⟩
-    · rintro ⟨q, -, hs⟩
-      exact (Finset.mem_filter.mp hs).1
-  have hdis : (((Nat.primesLE b).filter fun q => a < q : Finset ℕ) : Set ℕ).
-      PairwiseDisjoint
-        fun q => (smoothCongruentOne N p).filter
-          fun s => largestPrimeFactor s = q := by
+    · rintro ⟨q, hq, hs⟩
+      obtain ⟨hqb, hqa⟩ := Finset.mem_filter.mp hq
+      obtain ⟨hsmem, hlp⟩ := Finset.mem_filter.mp hs
+      subst hlp
+      exact Finset.mem_filter.mpr
+        ⟨hsmem, hqa, Nat.le_of_mem_primesLE hqb⟩
+  have hdis : Set.PairwiseDisjoint
+      (((Nat.primesLE b).filter fun q => a < q : Finset ℕ) : Set ℕ)
+      (fun q => (smoothCongruentOne N p).filter
+        fun s => largestPrimeFactor s = q) := by
     intro q₁ _ q₂ _ hne
     exact Finset.disjoint_left.mpr fun s hs₁ hs₂ =>
       hne ((Finset.mem_filter.mp hs₁).2.symm.trans
@@ -1071,7 +1073,7 @@ theorem smoothCongruentOne_card_eq_lpf_split (N p a : ℕ) (hp : 2 ≤ p) :
       Finset.mem_union, Finset.mem_filter]
     constructor
     · intro hs
-      rcases le_or_lt (largestPrimeFactor s) a with h | h
+      rcases le_or_gt (largestPrimeFactor s) a with h | h
       · exact Or.inl ⟨hs, h⟩
       · refine Or.inr ⟨hs, h, ?_⟩
         have hlt := lpf_lt_of_mem_smoothCongruentOne hp hs
@@ -1118,9 +1120,7 @@ theorem smoothCongruentOne_card_le_lpf_split_real (N p a : ℕ) (hp : 2 ≤ p)
     _ ≤ smoothCount N a +
           ((N : ℝ) / (p : ℝ) ^ 2 * (Real.log ((p - 1 : ℕ) : ℝ) - Real.log a)
             + p) := by
-        apply add_le_add_left
-        apply add_le_add_left
-        exact_mod_cast Nat.sub_le p 1
+        linarith [hpm1]
     _ = smoothCount N a +
           (N : ℝ) / (p : ℝ) ^ 2 * (Real.log (p - 1) - Real.log a) + p := by
         rw [Nat.cast_sub (show 1 ≤ p by omega), Nat.cast_one]
@@ -1149,8 +1149,9 @@ theorem primePairCong_fiber_card_le {P₁ P₂ p a q₁ : ℕ}
     ((primePairCongFinset P₁ P₂ p a).filter fun e => e.1 = q₁).card ≤
       P₂ / p + 1 := by
   classical
-  rcases ((primePairCongFinset P₁ P₂ p a).filter fun e => e.1 = q₁)
-      .eq_empty_or_nonempty with hempty | hne
+  rcases Finset.eq_empty_or_nonempty
+      ((primePairCongFinset P₁ P₂ p a).filter fun e => e.1 = q₁) with
+    hempty | hne
   · simp [hempty]
   obtain ⟨⟨q₁', m₀⟩, he₀⟩ := hne
   obtain ⟨hmem₀, hfst⟩ := Finset.mem_filter.mp he₀
@@ -1194,9 +1195,12 @@ theorem primePairCongFinset_card_le {P₁ P₂ p a : ℕ}
   rw [Finset.card_eq_sum_card_fiberwise
     (f := Prod.fst) (t := Nat.primesLE P₁)
     (s := primePairCongFinset P₁ P₂ p a)]
-  · apply Finset.sum_le_sum
-    intro q₁ _
-    exact primePairCong_fiber_card_le hp ha
+  · calc ∑ b ∈ Nat.primesLE P₁,
+          #{a ∈ primePairCongFinset P₁ P₂ p a | a.1 = b}
+        ≤ ∑ _b ∈ Nat.primesLE P₁, (P₂ / p + 1) :=
+          Finset.sum_le_sum fun q₁ _ => primePairCong_fiber_card_le hp ha
+      _ = (Nat.primesLE P₁).card * (P₂ / p + 1) := by
+          rw [Finset.sum_const, nsmul_eq_mul]
   · intro e he
     obtain ⟨hprod, -⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp he)
     exact (Finset.mem_product.mp hprod).1
@@ -1241,8 +1245,9 @@ theorem primePairCong₂_fiber_card_le {P₁ P₂ p p' a a' q₁ : ℕ}
     ((primePairCong₂Finset P₁ P₂ p p' a a').filter fun e => e.1 = q₁).card ≤
       P₂ / (p * p') + 1 := by
   classical
-  rcases ((primePairCong₂Finset P₁ P₂ p p' a a').filter fun e => e.1 = q₁)
-      .eq_empty_or_nonempty with hempty | hne
+  rcases Finset.eq_empty_or_nonempty
+      ((primePairCong₂Finset P₁ P₂ p p' a a').filter fun e => e.1 = q₁) with
+    hempty | hne
   · simp [hempty]
   obtain ⟨⟨q₁', m₀⟩, he₀⟩ := hne
   obtain ⟨hmem₀, hfst⟩ := Finset.mem_filter.mp he₀
@@ -1291,9 +1296,13 @@ theorem primePairCong₂Finset_card_le {P₁ P₂ p p' a a' : ℕ}
   rw [Finset.card_eq_sum_card_fiberwise
     (f := Prod.fst) (t := Nat.primesLE P₁)
     (s := primePairCong₂Finset P₁ P₂ p p' a a')]
-  · apply Finset.sum_le_sum
-    intro q₁ _
-    exact primePairCong₂_fiber_card_le hp hp' hpp ha ha'
+  · calc ∑ b ∈ Nat.primesLE P₁,
+          #{a ∈ primePairCong₂Finset P₁ P₂ p p' a a' | a.1 = b}
+        ≤ ∑ _b ∈ Nat.primesLE P₁, (P₂ / (p * p') + 1) :=
+          Finset.sum_le_sum fun q₁ _ =>
+            primePairCong₂_fiber_card_le hp hp' hpp ha ha'
+      _ = (Nat.primesLE P₁).card * (P₂ / (p * p') + 1) := by
+          rw [Finset.sum_const, nsmul_eq_mul]
   · intro e he
     obtain ⟨hprod, -⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp he)
     exact (Finset.mem_product.mp hprod).1
@@ -1317,9 +1326,10 @@ theorem primePairCong₂Finset_card_le_real {P₁ P₂ p p' a a' : ℕ}
     rwa [Nat.cast_add, Nat.cast_one] at this
   have h2 : (((P₂ / (p * p') + 1 : ℕ) : ℝ)) ≤ (P₂ : ℝ) / (p * p') + 1 := by
     push_cast
-    have : (((P₂ / (p * p') : ℕ) : ℝ)) ≤ (P₂ : ℝ) / (p * p') :=
-      Nat.cast_div_le
-    linarith [this]
+    have hd : (((P₂ / (p * p') : ℕ) : ℝ)) ≤
+        (P₂ : ℝ) / (((p * p') : ℕ) : ℝ) := Nat.cast_div_le
+    rw [Nat.cast_mul] at hd
+    linarith [hd]
   calc ((primePairCong₂Finset P₁ P₂ p p' a a').card : ℝ)
       ≤ ((Nat.primesLE P₁).card : ℝ) * ((P₂ / (p * p') + 1 : ℕ) : ℝ) := hcast
     _ ≤ ((P₁ : ℝ) + 1) * ((P₂ : ℝ) / (p * p') + 1) := by
@@ -1372,9 +1382,8 @@ theorem smoothCount_mono_y {N y₁ y₂ : ℕ} (h : y₁ ≤ y₂) :
     smoothCount N y₁ ≤ smoothCount N y₂ := by
   apply Finset.card_le_card
   intro s hs
-  rw [Finset.mem_filter] at hs ⊢
-  obtain ⟨hsI, hlp⟩ := hs
-  exact ⟨hsI, hlp.trans h⟩
+  simp only [smoothFinset, Finset.mem_filter] at hs ⊢
+  exact ⟨hs.1, hs.2.trans h⟩
 
 /-- A crude consequence of the conditional bound: since
 `Ψ(N/q, q) ≤ Ψ(N, p−1)` and there are `≤ p` cofactor primes, the
@@ -1421,8 +1430,9 @@ theorem smoothCongruentOne_card_le_of_partner_bound_crude (N p : ℕ)
         apply mul_le_mul_of_nonneg_left _ (by apply div_nonneg hC (by positivity))
         exact mul_le_mul_of_nonneg_right hcard hNN
     _ = C * smoothCount N (p - 1) / p := by
-        have hpR : (p : ℝ) ≠ 0 := by exact_mod_cast (by omega : 0 < p)
-        field_simp
+        have hpR : (p : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+        rw [eq_div_iff hpR, div_mul_eq_mul_div, div_mul_eq_mul_div,
+          div_eq_iff (pow_ne_zero 2 hpR), pow_two]
         ring
 
 end JSP314
