@@ -438,16 +438,19 @@ theorem smoothCount_eventually_ge_exp :
         have hdiv : (Y : ℝ) / (y : ℝ) ^ u < ((Y / y ^ u : ℕ) : ℝ) + 1 := by
           rw [div_lt_iff₀ (pow_pos hy0 u : (0 : ℝ) < (y : ℝ) ^ u)]
           have h := hmod
-          rw [← Nat.cast_lt] at h
+          rw [← Nat.cast_lt (α := ℝ)] at h
           push_cast at h
           exact h
         have hwge : (Y : ℝ) / (2 * (y : ℝ) ^ u) ≤ ((Y / y ^ u : ℕ) : ℝ) := by
           have ha1 : (1 : ℝ) ≤ ((Y / y ^ u : ℕ) : ℝ) := by
             have h := Nat.div_pos hYu hapos
             exact_mod_cast h
-          rcases le_or_lt ((Y : ℝ) / (y : ℝ) ^ u) 2 with ht | ht
+          have hhalf : (Y : ℝ) / (2 * (y : ℝ) ^ u) = ((Y : ℝ) / (y : ℝ) ^ u) / 2 := by
+            ring
+          rw [hhalf]
+          rcases le_or_gt ((Y : ℝ) / (y : ℝ) ^ u) 2 with ht | ht
           · linarith [hdiv, ha1]
-          · linarith [hdiv]
+          · linarith [hdiv, ha1]
         have hlogw : Real.log (Y : ℝ) - (u : ℝ) * Real.log (y : ℝ) - Real.log 2
             ≤ Real.log ((Y / y ^ u : ℕ) : ℝ) := by
           have e := Real.log_le_log
@@ -513,7 +516,7 @@ theorem smoothCount_eventually_ge_exp :
       have hug : (y : ℝ) / (64 * Real.log (y : ℝ)) ≤ (u : ℝ) := by
         have h : (y : ℝ) / (32 * Real.log (y : ℝ)) < 2 * (u : ℝ) :=
           lt_of_le_of_lt hB1y hDlt
-        rw [div_lt_iff₀ (mul_pos (by norm_num) hly : (0 : ℝ) < 64 * Real.log (y : ℝ))]
+        rw [div_le_iff₀ (mul_pos (by norm_num) hly : (0 : ℝ) < 64 * Real.log (y : ℝ))]
         rw [div_lt_iff₀ (mul_pos (by norm_num) hly : (0 : ℝ) < 32 * Real.log (y : ℝ))] at h
         linarith [h]
       have hlogu_ge : Real.log (y : ℝ) - Real.log 64 - Real.log (Real.log (y : ℝ))
