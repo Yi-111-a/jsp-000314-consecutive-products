@@ -151,7 +151,7 @@ lemma sum_inv_le_log (k : ℕ) :
           -Real.log ((j : ℝ) / (j + 1 : ℝ)) := by
         rw [Real.log_div hjp.ne' (by positivity)]
         ring
-      rw [if_neg hj, zero_add, h3]
+      rw [ite_eq_right hj, zero_add, h3]
       linarith
   calc ∑ j ∈ Finset.range k, (1 : ℝ) / (j + 1 : ℝ)
       ≤ ∑ j ∈ Finset.range k,
@@ -427,7 +427,7 @@ lemma chebC_prime_dvd {n p : ℕ} (hp : p.Prime) (hlo : n / 6 < p) (hhi : p ≤ 
         show n / 2 / p ^ i + n / 3 / p ^ i + n / 6 / p ^ i ≤ n / p ^ i
         rw [cheb_div_div_pow_comm, cheb_div_div_pow_comm, cheb_div_div_pow_comm]
         exact cheb_floor_le _)]
-  rw [cheb_div_div_pow_comm, cheb_div_div_pow_comm, cheb_div_div_pow_comm]
+  simp_rw [cheb_div_div_pow_comm]
   refine le_trans ?_ (Finset.single_le_sum (f := fun i ↦ n / p ^ i -
     ((n / p ^ i) / 2 + (n / p ^ i) / 3 + (n / p ^ i) / 6)) (fun i _ ↦ Nat.zero_le _)
     (by exact Finset.mem_Ico.mpr ⟨le_refl 1, by have := hp.two_le; omega⟩))

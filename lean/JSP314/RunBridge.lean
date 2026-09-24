@@ -65,9 +65,8 @@ theorem rightRunCount_le_siftedSet_card {x p k w : ℕ} (hp : p.Prime) :
     simp only [siftedSet, Finset.mem_filter, Finset.mem_Icc]
     refine ⟨⟨hr1, hry⟩, ?_⟩
     intro q hq j hj hdvd
-    rw [Finset.mem_filter, Finset.mem_Ioc] at hq
+    rw [Finset.mem_Ioc] at hq
     obtain ⟨⟨hpq, -⟩, hqpr⟩ := hq
-    rw [Finset.mem_Icc] at hj
     rw [Nat.mul_div_cancel' hpdvd] at hdvd
     have hmem : m + j ∈ Finset.Icc (m + 1) (m + k) :=
       Finset.mem_Icc.mpr ⟨by omega, by omega⟩
@@ -78,7 +77,7 @@ theorem rightRunCount_le_siftedSet_card {x p k w : ℕ} (hp : p.Prime) :
   · intro a ha b hb hab
     rw [Finset.mem_coe, mem_rightRunWitness] at ha hb
     calc a = p ^ 2 * (a / p ^ 2) := (Nat.mul_div_cancel' ha.2.1).symm
-      _ = p ^ 2 * (b / p ^ 2) := by rw [hab]
+      _ = p ^ 2 * (b / p ^ 2) := by rw [show a / p ^ 2 = b / p ^ 2 from hab]
       _ = b := Nat.mul_div_cancel' hb.2.1
 
 /-- **Left sifted set**: `r ∈ [1, y]` such that for every prime `q` with
@@ -114,9 +113,8 @@ theorem leftRunCount_le_leftSiftedSet_card {x p k w : ℕ} (hp : p.Prime)
     simp only [leftSiftedSet, Finset.mem_filter, Finset.mem_Icc]
     refine ⟨⟨hr1, hry⟩, ?_⟩
     intro q hq j hj hdvd
-    rw [Finset.mem_filter, Finset.mem_Ioc] at hq
+    rw [Finset.mem_Ioc] at hq
     obtain ⟨⟨hpq, -⟩, hqpr⟩ := hq
-    rw [Finset.mem_Icc] at hj
     rw [Nat.mul_div_cancel' hpdvd] at hdvd
     have hmj1 : 1 ≤ m - j := by omega
     have hmem : m - j ∈ Finset.Icc (m - k) (m - 1) := by
@@ -134,7 +132,7 @@ theorem leftRunCount_le_leftSiftedSet_card {x p k w : ℕ} (hp : p.Prime)
   · intro a ha b hb hab
     rw [Finset.mem_coe, mem_leftRunWitness] at ha hb
     calc a = p ^ 2 * (a / p ^ 2) := (Nat.mul_div_cancel' ha.2.1).symm
-      _ = p ^ 2 * (b / p ^ 2) := by rw [hab]
+      _ = p ^ 2 * (b / p ^ 2) := by rw [show a / p ^ 2 = b / p ^ 2 from hab]
       _ = b := Nat.mul_div_cancel' hb.2.1
 
 end JSP314

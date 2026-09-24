@@ -243,13 +243,7 @@ theorem pow_dom_poly {k : ℕ} (hk : 42 ≤ k) :
   | succ k hk ih =>
     have hstep : (12 * (k + 1) + 12) * (12 * (k + 1) + 13) ≤
         2 * ((12 * k + 12) * (12 * k + 13)) := by
-      have hkk : 2 ≤ k * k := le_trans (by norm_num) (Nat.mul_le_mul hk hk)
-      have eL : (12 * (k + 1) + 12) * (12 * (k + 1) + 13) =
-          144 * (k * k) + 588 * k + 600 := by ring
-      have eR : 2 * ((12 * k + 12) * (12 * k + 13)) =
-          288 * (k * k) + 600 * k + 312 := by ring
-      rw [eL, eR]
-      omega
+      nlinarith [Nat.mul_le_mul hk hk]
     calc 1024 * (12 * (k + 1) + 12) * (12 * (k + 1) + 13)
         = 1024 * ((12 * (k + 1) + 12) * (12 * (k + 1) + 13)) := by ring
       _ ≤ 1024 * (2 * ((12 * k + 12) * (12 * k + 13))) :=
@@ -306,7 +300,7 @@ theorem nearPair_smallBand_sum_le_rpow_three_quarters_eventually :
     rw [Nat.cast_pow, Nat.cast_ofNat, ← Real.rpow_natCast]
     have hexp : ((2 * (L / 3) : ℕ) : ℝ) ≤ (2 / 3) * (L : ℝ) := by
       have h : ((L / 3 : ℕ) : ℝ) ≤ (L : ℝ) / 3 := by
-        simpa using Nat.cast_div_le
+        exact Nat.cast_div_le
       push_cast
       linarith
     calc (2 : ℝ) ^ ((2 * (L / 3) : ℕ) : ℝ)
@@ -328,7 +322,7 @@ theorem nearPair_smallBand_sum_le_rpow_three_quarters_eventually :
       rw [Nat.cast_pow, Nat.cast_ofNat, ← Real.rpow_natCast]
       have hk12 : (k : ℝ) ≤ (L : ℝ) / 12 := by
         rw [hkdef]
-        simpa using Nat.cast_div_le
+        exact Nat.cast_div_le
       calc (2 : ℝ) ^ (k : ℝ)
           ≤ (2 : ℝ) ^ ((L : ℝ) / 12) :=
             Real.rpow_le_rpow_of_exponent_le (by norm_num) hk12
@@ -359,6 +353,7 @@ theorem nearPair_smallBand_sum_le_rpow_three_quarters_eventually :
     _ = (x : ℝ) ^ (1 / 12 + 2 / 3 : ℝ) := by rw [← Real.rpow_add hxpos]
     _ = (x : ℝ) ^ (3 / 4 : ℝ) := by congr 1; norm_num
 
+set_option maxRecDepth 8192 in
 /-- **Requested shape** `≤ x · (log x)⁻²`: for `x ≥ 2^{504}` we have
 `log x = 16·log(x^{1/16}) ≤ 16·x^{1/16} ≤ x^{1/8}` (since `x^{1/16} ≥ 16`),
 so `(log x)² ≤ x^{1/4}` and `x^{3/4} ≤ x·(log x)⁻²`. -/
@@ -381,13 +376,14 @@ theorem nearPair_smallBand_sum_le_log_sq_eventually :
       pow_le_pow_right' (by norm_num) (by norm_num)
     have h1616 : (16 : ℕ) ^ 16 = 2 ^ 64 := by norm_num
     have hpow : ((16 ^ 16 : ℕ) : ℝ) ≤ (x : ℝ) := by
-      exact_mod_cast le_trans (h1616 ▸ h264) hxge
+      have h' : (16 : ℕ) ^ 16 ≤ x := le_trans (h1616 ▸ h264) hxge
+      exact_mod_cast h'
     have heq : (16 : ℝ) = ((16 ^ 16 : ℕ) : ℝ) ^ (1 / 16 : ℝ) := by
       rw [Nat.cast_pow, Nat.cast_ofNat, ← Real.rpow_natCast,
         ← Real.rpow_mul (by norm_num : (0 : ℝ) ≤ 16),
         show ((16 : ℕ) : ℝ) * (1 / 16) = (1 : ℝ) by norm_num,
         Real.rpow_one]
-    rw [heq]
+    conv_lhs => rw [heq]
     exact Real.rpow_le_rpow (Nat.cast_nonneg _) hpow
       (show (0 : ℝ) ≤ 1 / 16 by norm_num)
   -- `log x ≤ x^{1/8}`

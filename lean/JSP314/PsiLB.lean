@@ -283,8 +283,7 @@ theorem eventually_log_sq_le : ∀ᶠ y : ℕ in Filter.atTop,
   have hlog : 0 ≤ Real.log (y : ℝ) :=
     Real.log_nonneg (by exact_mod_cast (by omega : 1 ≤ y))
   have hsqrt : 0 ≤ (y : ℝ) ^ (1 / 2 : ℝ) := Real.rpow_nonneg hy0.le _
-  rw [Real.norm_eq_abs, abs_of_nonneg hlog, Real.norm_eq_abs, abs_of_nonneg hsqrt,
-    one_mul] at hy
+  rw [Real.norm_eq_abs, abs_of_nonneg hlog, Real.norm_eq_abs, abs_of_nonneg hsqrt] at hy
   have hsq : ((y : ℝ) ^ (1 / 2 : ℝ)) ^ 2 = (y : ℝ) := by
     rw [← Real.sqrt_eq_rpow, Real.sq_sqrt hy0.le]
   calc (Real.log (y : ℝ)) ^ 2 ≤ ((y : ℝ) ^ (1 / 2 : ℝ) / 8) ^ 2 :=
@@ -381,7 +380,7 @@ theorem smoothCount_eventually_ge_exp :
           _ ≤ Real.exp (Real.log (Y : ℝ)) := Real.exp_le_exp.mpr huL
           _ = (Y : ℝ) := Real.exp_log hY0
       exact_mod_cast e
-    rcases le_or_lt (2 * u) (SmoothLB.dyadicPrimes (y / 2)).card with h2u | h2u
+    rcases le_or_gt (2 * u) (SmoothLB.dyadicPrimes (y / 2)).card with h2u | h2u
     · -- Case A: `2u ≤ Δ(y/2)`, use the choose bound.
       set D' := ((SmoothLB.dyadicPrimes (y / 2)).card : ℝ) with hD'def
       have hD'pos : (0 : ℝ) < D' := by
