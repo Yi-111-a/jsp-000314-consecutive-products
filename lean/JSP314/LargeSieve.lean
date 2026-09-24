@@ -39,6 +39,7 @@ No placeholders; kernel-checkable.
 namespace JSP314
 
 open Finset Real
+open scoped ComplexConjugate
 
 /-! ### The additive character `e(α) = exp(2πiα)` -/
 
@@ -81,7 +82,7 @@ lemma e_conj (α : ℝ) : conj (e α) = e (-α) := by
       = (↑(2 * Real.pi * (-α)) : ℂ) * Complex.I := by
     rw [map_mul, Complex.conj_ofReal, Complex.conj_I]
     push_cast; ring
-  rw [e, e, Complex.conj_exp, h]
+  rw [e, e, ← Complex.exp_conj, h]
 
 lemma abs_e (α : ℝ) : ‖e α‖ = 1 :=
   Complex.norm_exp_ofReal_mul_I _
@@ -90,7 +91,7 @@ lemma e_pow (n : ℕ) (α : ℝ) : e (n * α) = (e α) ^ n := by
   have h : (↑(2 * Real.pi * (↑n * α)) : ℂ) * Complex.I
       = n * (↑(2 * Real.pi * α) * Complex.I) := by
     push_cast; ring
-  rw [e, h, Complex.exp_nat_mul]
+  rw [e, e, h, Complex.exp_nat_mul]
 
 lemma e_eq_one_iff (α : ℝ) : e α = 1 ↔ ∃ k : ℤ, α = k := by
   rw [e, Complex.exp_eq_one_iff]
@@ -106,8 +107,9 @@ lemma e_eq_one_iff (α : ℝ) : e α = 1 ↔ ∃ k : ℤ, α = k := by
       exact_mod_cast h2
     have hp : (2 * Real.pi) ≠ 0 := by positivity
     have h4 : α = (n : ℝ) := by
-      have := mul_left_cancel₀ hp h3
-      linarith [this]
+      have h3' : (2 * Real.pi) * α = (2 * Real.pi) * (n : ℝ) := by
+        linear_combination h3
+      exact mul_left_cancel₀ hp h3'
     exact_mod_cast h4
   · rintro ⟨k, rfl⟩
     use k
@@ -124,18 +126,25 @@ lemma intDist_nonneg (β : ℝ) : 0 ≤ intDist β := abs_nonneg _
 lemma intDist_le_half (β : ℝ) : intDist β ≤ 1 / 2 := abs_sub_round β
 
 lemma intDist_le_abs (β : ℝ) : intDist β ≤ |β| := by
+  show |β - round β| ≤ |β|
   simpa using round_le β (0 : ℤ)
 
 lemma intDist_int (n : ℤ) : intDist (n : ℝ) = 0 := by
   simp [intDist]
 
 lemma intDist_neg (β : ℝ) : intDist (-β) = intDist β := by
-  simp [intDist, ← abs_neg, neg_sub]
+  show |(-β) - round (-β)| = |β - round β|
+  rw [abs_sub_round_eq_min, abs_sub_round_eq_min]
+  rcases eq_or_ne (Int.fract β) 0 with h0 | h0
+  · rw [Int.fract_neg_eq_zero.mpr h0, h0]; simp
+  · rw [Int.fract_neg h0, sub_sub_cancel, min_comm]
 
 lemma intDist_add_int (β : ℝ) (n : ℤ) : intDist (β + n) = intDist β := by
-  have h : β + (n : ℝ) - (round β + n) = β - round β := by push_cast; ring
-  simp only [intDist, round_add_intCast]
-  rw [h]
+  show |β + (n : ℝ) - (round (β + (n : ℝ)) : ℝ)| = |β - (round β : ℝ)|
+  rw [round_add_intCast]
+  push_cast
+  congr 1
+  ring
 
 lemma intDist_sub_int (β : ℝ) (n : ℤ) : intDist (β - n) = intDist β := by
   have h : β - (n : ℝ) = β + (-n : ℤ) := by push_cast; ring
@@ -155,7 +164,7 @@ lemma min_abs_one_sub_abs_le_intDist {u : ℝ} (hu : |u| < 1) :
     min |u| (1 - |u|) ≤ intDist u := by
   have hrb : |(round u : ℝ)| < 2 := by
     have h1 : |(round u : ℝ)| ≤ |(round u : ℝ) - u| + |u| := by
-      have h := abs_add ((round u : ℝ) - u) u
+      have h := abs_add_le ((round u : ℝ) - u) u
       rwa [sub_add_cancel] at h
     have h2 : |(round u : ℝ) - u| ≤ 1 / 2 := by
       rw [abs_sub_comm]; exact abs_sub_round u
@@ -212,8 +221,8 @@ lemma norm_e_sub_one (β : ℝ) : ‖e β - 1‖ = 2 * |Real.sin (Real.pi * β)|
       = ↑(2 * Real.sin (Real.pi * β)) * Complex.I := by
     have h5 : 2 * Real.pi * (β / 2) = Real.pi * β := by ring
     have h6 : 2 * Real.pi * (-β / 2) = -(Real.pi * β) := by ring
-    rw [e, e, h5, h6, ← ofReal_neg, Complex.exp_ofReal_mul_I,
-      Complex.exp_ofReal_mul_I, Real.sin_neg]
+    rw [e, e, h5, h6, Complex.exp_ofReal_mul_I, Complex.exp_ofReal_mul_I,
+      Real.cos_neg, Real.sin_neg]
     push_cast
     ring
   rw [h4, norm_mul, Complex.norm_I, mul_one]
@@ -235,7 +244,7 @@ lemma four_mul_intDist_le_norm_e_sub_one (β : ℝ) :
     have h8 : Real.pi * β = Real.pi * θ + (k : ℝ) * Real.pi := by
       rw [hβ]; ring
     rw [h8, Real.sin_add_int_mul_pi]
-  rw [hsin, abs_pow, abs_neg, abs_one, one_pow, one_mul]
+  rw [hsin, abs_mul, abs_zpow, abs_neg, abs_one, one_zpow, one_mul]
   -- |sin(πθ)| = sin(π|θ|)
   have hpi : |Real.pi * θ| ≤ Real.pi := by
     rw [abs_mul, abs_of_pos Real.pi_pos]

@@ -202,8 +202,8 @@ lemma log_factorial_upper (k : ℕ) :
             (((j + 1 : ℕ) : ℝ) * Real.log (j + 1 : ℕ) - (j : ℝ) * Real.log j - 1))
       ≤ (k : ℝ) * Real.log k - k +
           ∑ j ∈ Finset.range k, (1 : ℝ) / (j + 1 : ℝ) := by
-        apply add_le_add_left
-        exact Finset.sum_le_sum fun j _ ↦ hδ j
+        have hs := Finset.sum_le_sum fun j _ ↦ hδ j
+        linarith
     _ ≤ (k : ℝ) * Real.log k - k + (1 + Real.log k) := by
         gcongr
         exact sum_inv_le_log k
@@ -218,16 +218,14 @@ lemma div_mul_log_le {n d : ℕ} (hd : 0 < d) (h : 2 * d ≤ n) :
   have hd0' : (0 : ℝ) < d := by positivity
   set a : ℝ := ((n / d : ℕ) : ℝ) with ha
   have hlt : (n : ℝ) < (((n / d : ℕ) : ℝ) + 1) * d := by
-    have h := Nat.div_add_mod n d
+    have h := Nat.div_add_mod' n d
     have hm := Nat.mod_lt n hd
     have : n < (n / d) * d + d := by omega
     calc (n : ℝ) < ((n / d : ℕ) : ℝ) * d + d := by exact_mod_cast this
     _ = (((n / d : ℕ) : ℝ) + 1) * d := by ring
   have ha_gt : (n : ℝ) / d - 1 < a := by
-    have := hlt
-    rw [sub_lt_iff_lt_add]
-    rw [lt_div_iff₀ hd0']
-    linarith [this]
+    rw [sub_lt_iff_lt_add, div_lt_iff₀ hd0', ha]
+    exact hlt
   have ha_pos : 0 < a := by
     have : (1 : ℝ) ≤ (n : ℝ) / d - 1 := by
       have hn : (2 * d : ℝ) ≤ n := by exact_mod_cast h
@@ -238,20 +236,27 @@ lemma div_mul_log_le {n d : ℕ} (hd : 0 < d) (h : 2 * d ≤ n) :
   have ha_le : a ≤ (n : ℝ) / d := by
     rw [ha]; exact Nat.cast_div_le
   have h1 : Real.log ((n : ℝ) / d - 1) ≤ Real.log a :=
-    Real.log_le_log (by linarith) ha_gt.le
+    Real.log_le_log (by
+      have htwo : (2 : ℝ) ≤ (n : ℝ) / d := by
+        rw [le_div_iff₀ hd0']; exact_mod_cast h
+      linarith) ha_gt.le
   have h2 : Real.log ((n : ℝ) / d - 1) = Real.log ((n : ℝ) - d) - Real.log d := by
-    rw [show (n : ℝ) / d - 1 = ((n : ℝ) - d) / d by field,
-      Real.log_div (by linarith [hd0']) hd0']
-    · rfl
-    · have hn : (2 * d : ℝ) ≤ n := by exact_mod_cast h
-      linarith
+    have hnd : (n : ℝ) - d ≠ 0 := by
+      have hn : (2 * d : ℝ) ≤ n := by exact_mod_cast h
+      have : (0 : ℝ) < (n : ℝ) - d := by linarith
+      exact this.ne'
+    rw [show (n : ℝ) / d - 1 = ((n : ℝ) - d) / d by
+        rw [← sub_div, div_self hd0],
+      Real.log_div hnd hd0]
   have h3 : Real.log ((n : ℝ) - d) ≥ Real.log n - 2 * (d : ℝ) / n := by
     have hn : (2 * d : ℝ) ≤ n := by exact_mod_cast h
     have hn0 : (0 : ℝ) < n := by linarith
     have hnd : (0 : ℝ) < (n : ℝ) - d := by linarith
+    have hdn : (0 : ℝ) < 1 - (d : ℝ) / n := by
+      rw [sub_pos, div_lt_iff₀ hn0]; linarith
     have e1 : Real.log ((n : ℝ) - d) =
         Real.log n + Real.log (1 - (d : ℝ) / n) := by
-      rw [← Real.log_mul (by linarith) (by positivity)]
+      rw [← Real.log_mul hn0.ne' hdn.ne']
       congr 1
       field
     have ht : (0 : ℝ) ≤ (d : ℝ) / n := by positivity
@@ -259,13 +264,12 @@ lemma div_mul_log_le {n d : ℕ} (hd : 0 < d) (h : 2 * d ≤ n) :
       rw [div_le_iff₀ hn0]; linarith
     have hlog : Real.log (1 - (d : ℝ) / n) ≥ -((d : ℝ) / n) / (1 - (d : ℝ) / n) := by
       have h4 : Real.log (1 / (1 - (d : ℝ) / n)) ≤ 1 / (1 - (d : ℝ) / n) - 1 :=
-        Real.log_le_sub_one_of_pos (by positivity)
-      rw [Real.log_div one_ne_zero (by positivity : (1 - (d : ℝ) / n) ≠ 0),
-        Real.log_one, zero_sub] at h4
+        Real.log_le_sub_one_of_pos (one_div_pos.mpr hdn)
+      rw [Real.log_div one_ne_zero hdn.ne', Real.log_one, zero_sub] at h4
       linarith
     have h5 : ((d : ℝ) / n) / (1 - (d : ℝ) / n) ≤ 2 * ((d : ℝ) / n) := by
-      rw [div_le_iff₀ (by positivity : (0:ℝ) < 1 - (d : ℝ) / n)]
-      nlinarith [ht]
+      rw [div_le_iff₀ hdn]
+      nlinarith [ht, ht1]
     rw [e1]
     linarith
   have hlog : Real.log a ≥ Real.log n - Real.log d - 2 * (d : ℝ) / n := by
@@ -273,7 +277,7 @@ lemma div_mul_log_le {n d : ℕ} (hd : 0 < d) (h : 2 * d ≤ n) :
   have hprod : a * (2 * (d : ℝ) / n) ≤ 2 := by
     have hn0 : (0 : ℝ) < n := by
       have : (2 * d : ℝ) ≤ n := by exact_mod_cast h
-      positivity
+      linarith
     calc a * (2 * (d : ℝ) / n) ≤ ((n : ℝ) / d) * (2 * (d : ℝ) / n) :=
           mul_le_mul_of_nonneg_right ha_le (by positivity)
     _ = 2 := by field
@@ -302,9 +306,9 @@ lemma log_chebC_le {n : ℕ} (hn : 12 ≤ n) :
   have hlo_a := log_factorial_lower a
   have hlo_b := log_factorial_lower b
   have hlo_c := log_factorial_lower c
-  have h2 := div_mul_log_le (d := 2) (by norm_num) (by omega)
-  have h3 := div_mul_log_le (d := 3) (by norm_num) (by omega)
-  have h6 := div_mul_log_le (d := 6) (by norm_num) (by omega)
+  have h2 := div_mul_log_le (n := n) (d := 2) (by norm_num) (by omega)
+  have h3 := div_mul_log_le (n := n) (d := 3) (by norm_num) (by omega)
+  have h6 := div_mul_log_le (n := n) (d := 6) (by norm_num) (by omega)
   have hr : ∃ r : ℕ, n - (a + b + c) = r ∧ r ≤ 5 := ⟨n - (a+b+c), rfl, by omega⟩
   obtain ⟨r, hreq, hr5⟩ := hr
   have hn1 : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast (by omega : 1 ≤ n)
@@ -322,9 +326,9 @@ lemma log_chebC_le {n : ℕ} (hn : 12 ≤ n) :
   have hlog6eq : Real.log (6 : ℝ) = Real.log 2 + Real.log 3 := by
     rw [show (6 : ℝ) = 2 * 3 by norm_num, Real.log_mul (by norm_num) (by norm_num)]
   have habc : (a : ℝ) + b + c = n - r := by
-    have := hreq
-    rw [← this]
-    exact_mod_cast hr_cast ▸ rfl
+    have hreqr : (r : ℝ) = (n : ℝ) - ((a : ℝ) + b + c) := by
+      rw [← hreq]; exact hr_cast
+    linarith
   calc Real.log (chebC n)
       = Real.log (n !) - Real.log (a !) - Real.log (b !) - Real.log (c !) := by
         rw [hlogC]; ring
@@ -344,11 +348,10 @@ lemma log_chebC_le {n : ℕ} (hn : 12 ≤ n) :
     _ = (r : ℝ) * Real.log n
         + ((a : ℝ) * Real.log 2 + (b : ℝ) * Real.log 3 + (c : ℝ) * Real.log 6)
         - r + Real.log n + 7 := by
-        rw [show ((n : ℝ) - (a + b + c)) = (r : ℝ) by
-          rw [← hreq]; exact_mod_cast hr_cast]
-        rw [show (-n + a + b + c : ℝ) = -(r : ℝ) by
-          rw [← hreq]; have := hr_cast; linarith]
-        ring
+        have hnr : (n : ℝ) - (a + b + c) = (r : ℝ) := by
+          rw [← hreq]; exact hr_cast.symm
+        rw [hnr]
+        linarith [habc]
     _ ≤ 5 * Real.log n
         + ((n : ℝ) / 2 * Real.log 2 + (n : ℝ) / 3 * Real.log 3 +
             (n : ℝ) / 6 * Real.log 6)
@@ -374,7 +377,7 @@ lemma chebC_pos (n : ℕ) : 0 < chebC n := by
   have h := Nat.div_mul_cancel hd
   by_contra hz
   rw [not_lt, Nat.le_zero] at hz
-  rw [chebC, hz] at h
+  rw [hz] at h
   exact Nat.factorial_ne_zero n (by simpa using h)
 
 lemma chebC_prime_dvd {n p : ℕ} (hp : p.Prime) (hlo : n / 6 < p) (hhi : p ≤ n) :
@@ -389,7 +392,7 @@ lemma chebC_prime_dvd {n p : ℕ} (hp : p.Prime) (hlo : n / 6 < p) (hhi : p ≤ 
       (n !).factorization p - ((n / 2)! * (n / 3)! * (n / 6)!).factorization p := by
     have h := congrArg (fun m : ℕ ↦ m.factorization p) hmul
     rw [Nat.factorization_mul hC hD, Finsupp.add_apply] at h
-    exact Nat.eq_sub_of_add_eq h.symm
+    exact Nat.eq_sub_of_add_eq h
   have hlog : ∀ m : ℕ, m ≤ n → Nat.log p m < n + 1 := by
     intro m hm; have h := Nat.log_le_self p m; omega
   rw [hfact,
