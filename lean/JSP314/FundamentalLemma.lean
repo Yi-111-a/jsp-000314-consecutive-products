@@ -422,20 +422,24 @@ theorem brun_sum_lambda_div_eq_prod_sub_tail {P t : ℕ} (hP : Squarefree P) :
     Finset.disjoint_filter_filter_not _ _ _
   have hunion : P.primeFactors.powerset.filter (fun s => s.card ≤ 2 * t)
       ∪ P.primeFactors.powerset.filter (fun s => ¬ s.card ≤ 2 * t)
-      = P.primeFactors.powerset := Finset.filter_union_filter_not_eq _
+      = P.primeFactors.powerset := by
+    ext s
+    simp only [Finset.mem_union, Finset.mem_filter]
+    tauto
   have hsplit : ∑ s ∈ P.primeFactors.powerset,
         (-1 : ℚ) ^ s.card * ∏ q ∈ s, (q : ℚ)⁻¹
       = ∑ s ∈ P.primeFactors.powerset with s.card ≤ 2 * t,
           (-1 : ℚ) ^ s.card * ∏ q ∈ s, (q : ℚ)⁻¹
         + ∑ s ∈ P.primeFactors.powerset with ¬ s.card ≤ 2 * t,
           (-1 : ℚ) ^ s.card * ∏ q ∈ s, (q : ℚ)⁻¹ := by
-    rw [← hunion, Finset.sum_union hdisj]
+    conv_lhs => rw [← hunion]
+    rw [Finset.sum_union hdisj]
   rw [sum_powerset_neg_one_pow_mul_prod_inv] at hsplit
   have hflt : P.primeFactors.powerset.filter (fun s => ¬ s.card ≤ 2 * t)
       = P.primeFactors.powerset.filter fun s => 2 * t < s.card :=
     Finset.filter_congr fun s _ => not_le
   rw [hflt] at hsplit
-  rw [← hsplit]
+  rw [hsplit]
   ring
 
 /-- The main term differs from `∏_{q ∣ P} (1 - q⁻¹)` by at most the absolute
@@ -503,8 +507,8 @@ theorem brun_tail_le_exp {S : Finset ℕ} {t : ℕ} {y : ℝ} (hy : 1 ≤ y) :
   refine brun_tail_le hy |>.trans ?_
   calc ∏ q ∈ S, (1 + (q : ℝ)⁻¹ * y)
       ≤ Real.exp (∑ q ∈ S, (q : ℝ)⁻¹ * y) :=
-        Real.prod_one_add_le_exp_sum _ fun q _ =>
-          mul_nonneg (inv_nonneg.mpr (Nat.cast_nonneg _)) (by linarith)
+        Real.prod_one_add_le_exp_sum _ fun q =>
+          mul_nonneg (inv_nonneg.mpr (Nat.cast_nonneg _)) (zero_le_one.trans hy)
     _ = Real.exp (y * ∑ q ∈ S, (q : ℝ)⁻¹) := by
         rw [← Finset.sum_mul, mul_comm]
 
