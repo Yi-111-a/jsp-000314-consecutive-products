@@ -1,0 +1,22 @@
+import JSP314.FreshEye
+
+open JSP314
+
+#print axioms badNonSingleton_interval_bound_of_eventually_le
+#print axioms badNonSingleton_interval_bound_of_shortBadCount_loglog
+#print axioms badNonSingleton_interval_bound_of_nearPairSum_loglog
+#print axioms badNonSingleton_interval_bound_of_runCountSum_loglog
+#print axioms badNonSingleton_interval_bound_of_const_mul_ratio
+#print axioms badNonSingleton_interval_bound_of_shortBadCount_const
+#print axioms badNonSingleton_interval_bound_of_nearPairSum_const
+#print axioms badNonSingleton_interval_bound_of_runCountSum_const
+#print axioms isBadInterval_8_9
+#print axioms two_le_badNonSingletonCount
+#print axioms eventually_two_le_badNonSingletonCount
+#print axioms badNonSingletonCount_mono
+#print axioms inShortBadInterval_of_mem_rightRunWitness_one
+#print axioms inShortBadInterval_of_mem_leftRunWitness_one
+#print axioms sum_rightRunCount_one_le_shortBadCount
+#print axioms sum_leftRunCount_one_le_shortBadCount
+#print axioms badSingletonCount_mul_log_inv_eventually_ge
+#print axioms exists_loglog_bound_of_const
