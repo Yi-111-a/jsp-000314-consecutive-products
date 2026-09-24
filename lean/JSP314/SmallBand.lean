@@ -136,7 +136,8 @@ theorem rightRunCount_le_smoothUpTo {x p k : ℕ} (hk : 1 ≤ k) :
       rw [Finset.mem_Icc]; omega
     have hlpf := hsmooth (m + 1) hmem
     rw [Finset.mem_coe, Nat.mem_smoothNumbersUpTo]
-    exact ⟨by omega, mem_smoothNumbers_of_lpf_le (by omega) hlpf⟩
+    exact ⟨by show m + 1 ≤ 2 * x + 1; omega,
+      mem_smoothNumbers_of_lpf_le (by show 1 ≤ m + 1; omega) hlpf⟩
   · intro a _ b _ h
     exact Nat.add_right_cancel h
 
@@ -149,7 +150,7 @@ theorem leftRunCount_le_smoothUpTo {x p k : ℕ} (hk : 1 ≤ k) (hp : 2 ≤ p) :
   have hm2 : ∀ m ∈ leftRunWitness x p k, 2 ≤ m := by
     intro m hm
     rw [mem_leftRunWitness] at hm
-    rcases Nat.le_or_lt m 1 with h | h
+    rcases le_or_lt m 1 with h | h
     · rw [largestPrimeFactor_eq_one_iff.mpr h] at hm
       omega
     · omega
@@ -162,10 +163,12 @@ theorem leftRunCount_le_smoothUpTo {x p k : ℕ} (hk : 1 ≤ k) (hp : 2 ≤ p) :
       rw [Finset.mem_Icc]; omega
     have hlpf := hsmooth (m - 1) hmem
     rw [Finset.mem_coe, Nat.mem_smoothNumbersUpTo]
-    exact ⟨by omega, mem_smoothNumbers_of_lpf_le (by omega) hlpf⟩
+    exact ⟨by show m - 1 ≤ 2 * x; omega,
+      mem_smoothNumbers_of_lpf_le (by show 1 ≤ m - 1; omega) hlpf⟩
   · intro a ha b hb h
     have ha2 := hm2 a (Finset.mem_coe.mp ha)
     have hb2 := hm2 b (Finset.mem_coe.mp hb)
+    change a - 1 = b - 1 at h
     omega
 
 /-- **Per-cell bound.** For prime `p` and `k ≥ 1`, the two run counts together
@@ -213,7 +216,7 @@ theorem smallBand_runSum_le (x Z : ℕ) :
         apply Finset.sum_le_sum
         intro p hp
         have hpZ : p ≤ Z := Nat.le_of_mem_primesLE hp
-        rw [Finset.sum_const, nsmul_eq_mul, Finset.card_Icc]
+        rw [Finset.sum_const, Nat.nsmul_eq_mul, Nat.card_Icc]
         have hcard : 2 * p + 1 - 1 = 2 * p := by omega
         rw [hcard]
         calc (2 * p) * (2 * (Nat.smoothNumbersUpTo (2 * x + 1) (Z + 1)).card)
@@ -223,7 +226,7 @@ theorem smallBand_runSum_le (x Z : ℕ) :
               Nat.mul_le_mul (by omega) (le_refl _)
     _ = (Nat.primesLE Z).card *
           (4 * Z * (Nat.smoothNumbersUpTo (2 * x + 1) (Z + 1)).card) := by
-        rw [Finset.sum_const, nsmul_eq_mul]
+        rw [Finset.sum_const, Nat.nsmul_eq_mul]
     _ ≤ (Z + 1) * (4 * Z * (Nat.smoothNumbersUpTo (2 * x + 1) (Z + 1)).card) :=
         Nat.mul_le_mul (primesLE_card_le Z) (le_refl _)
     _ = (Z + 1) * (4 * Z) *
@@ -314,7 +317,7 @@ theorem smallBand_runSum_le_rpow_half_eventually :
     have hfour : (M + 1) * (4 * M) ≤ 2 ^ M := by
       calc (M + 1) * (4 * M) = 4 * M * (M + 1) := by ring
         _ ≤ 4 * (M + 1) * (M + 2) :=
-            Nat.mul_le_mul (le_refl _) (by omega)
+            Nat.mul_le_mul (by omega) (by omega)
         _ ≤ 2 ^ M := four_mul_succ_mul_succ_le_pow hM
     have hexp : M + (M + 2) * (M + 1) ≤ L / 2 := by
       rw [Nat.le_div_iff_mul_le (by norm_num : 0 < 2)]
@@ -322,7 +325,8 @@ theorem smallBand_runSum_le_rpow_half_eventually :
           = 2 * M + 2 * ((M + 1) * (M + 2)) := by ring
         _ ≤ 2 * ((M + 1) * (M + 2)) + 2 * ((M + 1) * (M + 2)) := by
             apply Nat.add_le_add_right
-            exact Nat.mul_le_mul (le_refl 2) (by omega)
+            exact Nat.mul_le_mul (le_refl 2)
+              (M.le_succ.trans (Nat.le_mul_of_pos_right _ (Nat.succ_pos _)))
         _ = 4 * (M + 1) * (M + 2) := by ring
         _ ≤ 2 ^ M := four_mul_succ_mul_succ_le_pow hM
         _ ≤ L := hML

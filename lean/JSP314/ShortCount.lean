@@ -92,8 +92,7 @@ theorem card_badSingletonsOfLpf_le (B p : ℕ) :
       calc a = a / p ^ 2 * p ^ 2 := (Nat.div_mul_cancel hdvd_a).symm
         _ = b / p ^ 2 * p ^ 2 := by rw [hab']
         _ = b := Nat.div_mul_cancel hdvd_b
-    · rw [Nat.card_Icc]
-      omega
+    · simp [Nat.card_Icc]
 
 /-- **Per-prime covering bound**: the bad singletons `m ≤ B` with
 `lpf m = p` cover at most `(B / p²) · (2p + 1)` points. -/

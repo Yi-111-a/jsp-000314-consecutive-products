@@ -23,6 +23,7 @@ def primesLE210 : List ℕ :=
    73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151,
    157, 163, 167, 173, 179, 181, 191, 193, 197, 199]
 
+set_option maxRecDepth 10000 in
 /-- Every entry of `primesLE210` is prime (finite kernel check). -/
 theorem primesLE210_prime : ∀ q ∈ primesLE210, q.Prime := by
   decide
@@ -40,7 +41,7 @@ theorem findWit_spec {n k m q : ℕ} (h : findWit n k = some (m, q)) :
     m ∈ Finset.Icc (n + 1 - k) n ∧ q ∈ Finset.Icc (k + 1) m ∧
       q.Prime ∧ q ∣ m := by
   unfold findWit at h
-  rw [Option.map_eq_some'] at h
+  rw [Option.map_eq_some_iff] at h
   obtain ⟨q', hq', hpair⟩ := h
   obtain ⟨hm, hq⟩ := Prod.mk.inj_iff.mp hpair
   subst hm
@@ -65,33 +66,31 @@ theorem findWit_spec {n k m q : ℕ} (h : findWit n k = some (m, q)) :
     _ ≤ q' * (n / q') := Nat.mul_le_mul_left q' hdivpos
     _ = n - n % q' := hmq.symm
 
+set_option maxRecDepth 10000 in
 /-- Finite check, `k ≤ 7`, `n ≤ 93`, proved by kernel `decide`. -/
 theorem sylvesterSchur_check_small :
     ∀ n ∈ Finset.Icc 2 93, ∀ k ∈ Finset.Icc 1 7,
       2 * k ≤ n → ∃ m ∈ Finset.Icc (n + 1 - k) n, ∃ q ∈ Finset.Icc (k + 1) m,
         q.Prime ∧ q ∣ m := by
-  have key : ∀ n ∈ List.Icc 2 93, ∀ k ∈ List.Icc 1 7,
+  have key : ∀ n ∈ Finset.Icc 2 93, ∀ k ∈ Finset.Icc 1 7,
       2 * k ≤ n → (findWit n k).isSome := by
     decide
   intro n hn k hk h2k
-  have hn' : n ∈ List.Icc 2 93 := List.mem_Icc.mpr (Finset.mem_Icc.mp hn)
-  have hk' : k ∈ List.Icc 1 7 := List.mem_Icc.mpr (Finset.mem_Icc.mp hk)
-  obtain ⟨⟨m, q⟩, hsome⟩ := Option.isSome_iff_exists.mp (key n hn' k hk' h2k)
+  obtain ⟨⟨m, q⟩, hsome⟩ := Option.isSome_iff_exists.mp (key n hn k hk h2k)
   obtain ⟨hm, hq, hp, hd⟩ := findWit_spec hsome
   exact ⟨m, hm, q, hq, hp, hd⟩
 
+set_option maxRecDepth 10000 in
 /-- Finite check, `8 ≤ k ≤ 37`, `n ≤ 210`, proved by kernel `decide`. -/
 theorem sylvesterSchur_check_mid :
     ∀ n ∈ Finset.Icc 16 210, ∀ k ∈ Finset.Icc 8 37,
       2 * k ≤ n → ∃ m ∈ Finset.Icc (n + 1 - k) n, ∃ q ∈ Finset.Icc (k + 1) m,
         q.Prime ∧ q ∣ m := by
-  have key : ∀ n ∈ List.Icc 16 210, ∀ k ∈ List.Icc 8 37,
+  have key : ∀ n ∈ Finset.Icc 16 210, ∀ k ∈ Finset.Icc 8 37,
       2 * k ≤ n → (findWit n k).isSome := by
     decide
   intro n hn k hk h2k
-  have hn' : n ∈ List.Icc 16 210 := List.mem_Icc.mpr (Finset.mem_Icc.mp hn)
-  have hk' : k ∈ List.Icc 8 37 := List.mem_Icc.mpr (Finset.mem_Icc.mp hk)
-  obtain ⟨⟨m, q⟩, hsome⟩ := Option.isSome_iff_exists.mp (key n hn' k hk' h2k)
+  obtain ⟨⟨m, q⟩, hsome⟩ := Option.isSome_iff_exists.mp (key n hn k hk h2k)
   obtain ⟨hm, hq, hp, hd⟩ := findWit_spec hsome
   exact ⟨m, hm, q, hq, hp, hd⟩
 
