@@ -343,17 +343,44 @@ theorem smallBandSum_le_euler (x Z : ℕ) {η : ℝ} (hη0 : 0 < η)
             (hR.trans (mul_le_mul_of_nonneg_left hE'
               (Real.rpow_nonneg (Nat.cast_nonneg _) _)))
             hp0.le
+      _ ≤ (p : ℝ) * (((2 * x : ℝ) ^ (1 - η) * ((p : ℝ) ^ 2) ^ (-(1 - η))) *
+            Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η))) :=
+          mul_le_mul_of_nonneg_left
+            (mul_le_mul_of_nonneg_right hNR (Real.exp_pos _).le) hp0.le
+      _ = ((p : ℝ) * ((p : ℝ) ^ 2) ^ (-(1 - η))) *
+            ((2 * x : ℝ) ^ (1 - η) *
+              Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η))) := by
+          ring
       _ = (2 * x : ℝ) ^ (1 - η) *
             Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η)) *
-              ((p : ℝ) * (((2 * x / p ^ 2 : ℕ) : ℝ) ^ (1 - η) /
-                ((2 * x : ℝ) ^ (1 - η) *
-                  Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η)) *
-                    (p : ℝ) ^ (-1 + 2 * η)))) := by ring_nf; ring
-      _ ≤ (2 * x : ℝ) ^ (1 - η) *
-            Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η)) *
               (p : ℝ) ^ (-1 + 2 * η) := by
-          apply mul_le_mul_of_nonneg_left _ (by positivity)
-          apply mul_le_mul_of_nonneg_left _ (Real.exp_pos _).le
-          -- reduce to `p * (2x/p²)^σ ≤ (2x)^σ * p^{2η-1} · ((2x)^σ e^{4S}) / (...)`
-          sorry
-  sorry
+          rw [hpm]; ring
+  have hsum : ∑ p ∈ Nat.primesLE Z,
+        (p : ℝ) * (lpfCount (2 * x / p ^ 2) p : ℝ) ≤
+      (2 * x : ℝ) ^ (1 - η) *
+        Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η)) *
+          ∑ p ∈ Nat.primesLE Z, (p : ℝ) ^ (-1 + 2 * η) := by
+    calc ∑ p ∈ Nat.primesLE Z, (p : ℝ) * (lpfCount (2 * x / p ^ 2) p : ℝ)
+        ≤ ∑ p ∈ Nat.primesLE Z, (2 * x : ℝ) ^ (1 - η) *
+            Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η)) *
+              (p : ℝ) ^ (-1 + 2 * η) :=
+          Finset.sum_le_sum fun p hp => hper p hp
+      _ = (2 * x : ℝ) ^ (1 - η) *
+            Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η)) *
+              ∑ p ∈ Nat.primesLE Z, (p : ℝ) ^ (-1 + 2 * η) := by
+          rw [Finset.mul_sum]
+  calc ((∑ p ∈ Nat.primesLE Z, ∑ k ∈ Finset.Icc 1 (2 * p),
+        (rightRunCount x p k + leftRunCount x p k) : ℕ) : ℝ)
+      ≤ ((4 * ∑ p ∈ Nat.primesLE Z,
+          p * lpfCount (2 * x / p ^ 2) p : ℕ) : ℝ) := by
+        exact_mod_cast smallBandZ_sum_le x Z
+    _ = 4 * ∑ p ∈ Nat.primesLE Z,
+          (p : ℝ) * (lpfCount (2 * x / p ^ 2) p : ℝ) := by
+        norm_cast
+    _ ≤ 4 * ((2 * x : ℝ) ^ (1 - η) *
+          Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η)) *
+            ∑ p ∈ Nat.primesLE Z, (p : ℝ) ^ (-1 + 2 * η)) :=
+        mul_le_mul_of_nonneg_left hsum (by norm_num)
+    _ = 4 * (2 * x : ℝ) ^ (1 - η) *
+          Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η)) *
+            ∑ p ∈ Nat.primesLE Z, (p : ℝ) ^ (-1 + 2 * η) := by ring

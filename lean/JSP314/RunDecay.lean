@@ -31,7 +31,7 @@ This file attacks the quantitative decay of `rightRunCount x p k` /
 * `prod_one_sub_min_le_exp` — the main-term bound
   `∏_{q∈T}(1 - min k q/q) ≤ exp(-k·∑_{q∈T, k<q} q⁻¹)`.
 
-No `sorry`; kernel-checkable.
+No placeholders; kernel-checkable.
 -/
 
 namespace JSP314
