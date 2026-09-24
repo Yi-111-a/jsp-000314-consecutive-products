@@ -202,7 +202,12 @@ lemma log_factorial_upper (k : ℕ) :
             (((j + 1 : ℕ) : ℝ) * Real.log (j + 1 : ℕ) - (j : ℝ) * Real.log j - 1))
       ≤ (k : ℝ) * Real.log k - k +
           ∑ j ∈ Finset.range k, (1 : ℝ) / (j + 1 : ℝ) := by
-        have hs := Finset.sum_le_sum fun j _ ↦ hδ j
+        have hs : ∑ j ∈ Finset.range k,
+            (Real.log (j + 1 : ℝ) -
+              (((j + 1 : ℕ) : ℝ) * Real.log (j + 1 : ℕ) -
+                (j : ℝ) * Real.log j - 1)) ≤
+            ∑ j ∈ Finset.range k, (1 : ℝ) / (j + 1 : ℝ) :=
+          Finset.sum_le_sum fun j _ ↦ hδ j
         linarith
     _ ≤ (k : ℝ) * Real.log k - k + (1 + Real.log k) := by
         gcongr
@@ -246,7 +251,7 @@ lemma div_mul_log_le {n d : ℕ} (hd : 0 < d) (h : 2 * d ≤ n) :
       have : (0 : ℝ) < (n : ℝ) - d := by linarith
       exact this.ne'
     rw [show (n : ℝ) / d - 1 = ((n : ℝ) - d) / d by
-        rw [← sub_div, div_self hd0],
+        rw [sub_div, div_self hd0],
       Real.log_div hnd hd0]
   have h3 : Real.log ((n : ℝ) - d) ≥ Real.log n - 2 * (d : ℝ) / n := by
     have hn : (2 * d : ℝ) ≤ n := by exact_mod_cast h
@@ -266,11 +271,20 @@ lemma div_mul_log_le {n d : ℕ} (hd : 0 < d) (h : 2 * d ≤ n) :
       have h4 : Real.log (1 / (1 - (d : ℝ) / n)) ≤ 1 / (1 - (d : ℝ) / n) - 1 :=
         Real.log_le_sub_one_of_pos (one_div_pos.mpr hdn)
       rw [Real.log_div one_ne_zero hdn.ne', Real.log_one, zero_sub] at h4
+      have heq : ((d : ℝ) / n) / (1 - (d : ℝ) / n) =
+          1 / (1 - (d : ℝ) / n) - 1 := by
+        rw [div_eq_iff hdn.ne', sub_mul, div_mul_cancel₀ _ hdn.ne', one_mul,
+          sub_sub_self]
+      have hneg : -((d : ℝ) / n) / (1 - (d : ℝ) / n) =
+          -(((d : ℝ) / n) / (1 - (d : ℝ) / n)) := neg_div _ _
       linarith
     have h5 : ((d : ℝ) / n) / (1 - (d : ℝ) / n) ≤ 2 * ((d : ℝ) / n) := by
       rw [div_le_iff₀ hdn]
       nlinarith [ht, ht1]
     rw [e1]
+    have hneg : -((d : ℝ) / n) / (1 - (d : ℝ) / n) =
+        -(((d : ℝ) / n) / (1 - (d : ℝ) / n)) := neg_div _ _
+    have hdx : 2 * (d : ℝ) / n = 2 * ((d : ℝ) / n) := by ring
     linarith
   have hlog : Real.log a ≥ Real.log n - Real.log d - 2 * (d : ℝ) / n := by
     linarith [h1, h2, h3]
@@ -299,9 +313,11 @@ lemma log_chebC_le {n : ℕ} (hn : 12 ≤ n) :
     have h1 : ((chebC n : ℕ) : ℝ) = (n ! : ℝ) / ((a ! * b ! * c ! : ℕ) : ℝ) := by
       rw [chebC]
       exact Nat.cast_div hd (by positivity)
-    rw [h1, Real.log_div (by positivity) (by positivity),
-      Real.log_mul (by positivity) (by positivity),
-      Real.log_mul (by positivity) (by positivity)]
+    have hf0 : ∀ m : ℕ, ((m ! : ℕ) : ℝ) ≠ 0 :=
+      fun m ↦ Nat.cast_ne_zero.mpr (hfa m)
+    rw [h1, Real.log_div (hf0 n) (by positivity), Nat.cast_mul, Nat.cast_mul,
+      Real.log_mul (mul_ne_zero (hf0 a) (hf0 b)) (hf0 c),
+      Real.log_mul (hf0 a) (hf0 b)]
   have hup := log_factorial_upper n
   have hlo_a := log_factorial_lower a
   have hlo_b := log_factorial_lower b
@@ -377,8 +393,9 @@ lemma chebC_pos (n : ℕ) : 0 < chebC n := by
   have h := Nat.div_mul_cancel hd
   by_contra hz
   rw [not_lt, Nat.le_zero] at hz
+  change n ! / ((n / 2)! * (n / 3)! * (n / 6)!) = 0 at hz
   rw [hz] at h
-  exact Nat.factorial_ne_zero n (by simpa using h)
+  exact Nat.factorial_ne_zero n (by simpa using h.symm)
 
 lemma chebC_prime_dvd {n p : ℕ} (hp : p.Prime) (hlo : n / 6 < p) (hhi : p ≤ n) :
     p ∣ chebC n := by
@@ -403,7 +420,15 @@ lemma chebC_prime_dvd {n p : ℕ} (hp : p.Prime) (hlo : n / 6 < p) (hhi : p ≤ 
     Nat.factorization_factorial hp (hlog _ (Nat.div_le_self _ _)),
     Nat.factorization_factorial hp (hlog _ (Nat.div_le_self _ _)),
     ← Finset.sum_add_distrib, ← Finset.sum_add_distrib,
-    ← Finset.sum_tsub_distrib _ (fun i _ ↦ cheb_floor_le _)]
+    ← Finset.sum_tsub_distrib _
+      (f := fun i ↦ n / p ^ i)
+      (g := fun i ↦ n / 2 / p ^ i + n / 3 / p ^ i + n / 6 / p ^ i)
+      (fun i _ ↦ by
+        show n / 2 / p ^ i + n / 3 / p ^ i + n / 6 / p ^ i ≤ n / p ^ i
+        rw [cheb_div_div_pow_comm, cheb_div_div_pow_comm, cheb_div_div_pow_comm]
+        exact cheb_floor_le _)]
+  dsimp only
+  rw [cheb_div_div_pow_comm, cheb_div_div_pow_comm, cheb_div_div_pow_comm]
   refine le_trans ?_ (Finset.single_le_sum (f := fun i ↦ n / p ^ i -
     ((n / p ^ i) / 2 + (n / p ^ i) / 3 + (n / p ^ i) / 6)) (fun i _ ↦ Nat.zero_le _)
     (by exact Finset.mem_Ico.mpr ⟨le_refl 1, by have := hp.two_le; omega⟩))
@@ -415,8 +440,8 @@ lemma chebC_prime_dvd {n p : ℕ} (hp : p.Prime) (hlo : n / 6 < p) (hhi : p ≤ 
         rw [Nat.div_lt_iff_lt_mul (by norm_num : 0 < 6)] at h'
         omega
       omega
-    rw [cheb_div_div_pow_comm, cheb_div_div_pow_comm, cheb_div_div_pow_comm]
-    exact cheb_floor_ge ht1 ht2
+    simp only [pow_one]
+    omega
 
 lemma chebC_prod_dvd (n : ℕ) :
     ∏ p ∈ (Ioc (n / 6) n).filter Nat.Prime, p ∣ chebC n := by
@@ -457,9 +482,9 @@ lemma theta_sub_theta_le_log_chebC (n : ℕ) :
   have hprod_pos : (0 : ℕ) < ∏ p ∈ (Ioc (n / 6) n).filter Nat.Prime, p :=
     Finset.prod_pos fun p hp ↦ ((mem_filter.mp hp).2).pos
   have hsplit := primorial_split n
-  have hlog : Real.log (primorial n) =
-      Real.log (primorial (n / 6)) +
-        Real.log (∏ p ∈ (Ioc (n / 6) n).filter Nat.Prime, p) := by
+  have hlog : Real.log ((primorial n : ℕ) : ℝ) =
+      Real.log ((primorial (n / 6) : ℕ) : ℝ) +
+        Real.log ((∏ p ∈ (Ioc (n / 6) n).filter Nat.Prime, p : ℕ) : ℝ) := by
     rw [hsplit, Nat.cast_mul, Real.log_mul]
     · exact_mod_cast (primorial_pos _).ne'
     · exact_mod_cast hprod_pos.ne'
@@ -539,8 +564,9 @@ theorem theta_le_explicit (n : ℕ) :
   have hterm : ∀ i ∈ Finset.range t,
       Chebyshev.theta ((n / 6 ^ i : ℕ) : ℝ) -
           Chebyshev.theta ((n / 6 ^ (i + 1) : ℕ) : ℝ) ≤
-        ((2 / 3 : ℝ) * Real.log 2 + (1 / 2) * Real.log 3) * (n / 6 ^ i) +
-          6 * Real.log (n / 6 ^ i : ℕ) + 7 := by
+        ((2 / 3 : ℝ) * Real.log 2 + (1 / 2) * Real.log 3) *
+            ((n / 6 ^ i : ℕ) : ℝ) +
+          6 * Real.log ((n / 6 ^ i : ℕ) : ℝ) + 7 := by
     intro i hi
     have hi' : i < t := Finset.mem_range.mp hi
     have hge : 1 ≤ n / 6 ^ i := hdiv_ge i hi'
@@ -551,27 +577,24 @@ theorem theta_le_explicit (n : ℕ) :
     exact hstep
   have hsum_div : ∑ i ∈ Finset.range t, ((n / 6 ^ i : ℕ) : ℝ) ≤ (6 : ℝ) / 5 * n := by
     calc ∑ i ∈ Finset.range t, ((n / 6 ^ i : ℕ) : ℝ)
-        ≤ ∑ i ∈ Finset.range t, (n : ℝ) / 6 ^ i :=
-          Finset.sum_le_sum fun i _ ↦ Nat.cast_div_le
+        ≤ ∑ i ∈ Finset.range t, (n : ℝ) / 6 ^ i := by
+          apply Finset.sum_le_sum
+          intro i _
+          have h := Nat.cast_div_le (α := ℝ) (m := n) (n := 6 ^ i)
+          simp only [Nat.cast_pow, Nat.cast_ofNat] at h
+          exact h
       _ = (n : ℝ) * ∑ i ∈ Finset.range t, ((1 / 6 : ℝ)) ^ i := by
-          congr 1
           rw [Finset.mul_sum]
           refine Finset.sum_congr rfl fun i _ ↦ ?_
-          rw [div_pow, one_pow, div_eq_mul_inv, ← inv_pow]
+          rw [div_pow, one_pow, mul_one_div]
       _ = (n : ℝ) * ((1 - (1 / 6 : ℝ) ^ t) / (1 - 1 / 6)) := by
           congr 1
           rw [geom_sum_eq (by norm_num : (1 / 6 : ℝ) ≠ 1)]
           field
       _ ≤ (n : ℝ) * (6 / 5 : ℝ) := by
           apply mul_le_mul_of_nonneg_left _ (by positivity)
-          have : (0 : ℝ) < 1 - (1 / 6 : ℝ) ^ t := by
-            have : (1 / 6 : ℝ) ^ t < 1 := by
-              apply pow_lt_one₀ (by norm_num) (by norm_num)
-              rcases eq_or_ne t 0 with rfl | ht0
-              · norm_num
-              · exact Nat.pos_of_ne_zero ht0
-            linarith
           rw [div_le_iff₀ (by norm_num : (0:ℝ) < 1 - 1/6)]
+          have : (0 : ℝ) ≤ (1 / 6 : ℝ) ^ t := by positivity
           linarith
       _ = _ := by ring
   have hlog_le : ∀ i ∈ Finset.range t,
@@ -622,26 +645,35 @@ theorem theta_le_explicit (n : ℕ) :
           linarith [htel]
       _ ≤ Chebyshev.theta ((n / 6 ^ t : ℕ) : ℝ) +
             ∑ i ∈ Finset.range t,
-              (((2 / 3 : ℝ) * Real.log 2 + (1 / 2) * Real.log 3) * (n / 6 ^ i) +
-                6 * Real.log (n / 6 ^ i : ℕ) + 7) := by
-          gcongr
-          exact Finset.sum_le_sum fun i hi ↦ hterm i hi
+              (((2 / 3 : ℝ) * Real.log 2 + (1 / 2) * Real.log 3) *
+                  ((n / 6 ^ i : ℕ) : ℝ) +
+                6 * Real.log ((n / 6 ^ i : ℕ) : ℝ) + 7) := by
+          have hs := Finset.sum_le_sum fun i hi ↦ hterm i hi
+          linarith
       _ = Chebyshev.theta ((n / 6 ^ t : ℕ) : ℝ) +
-            ((2 / 3 : ℝ) * Real.log 2 + (1 / 2) * Real.log 3) *
+            (((2 / 3 : ℝ) * Real.log 2 + (1 / 2) * Real.log 3) *
               (∑ i ∈ Finset.range t, ((n / 6 ^ i : ℕ) : ℝ)) +
-            ∑ i ∈ Finset.range t, (6 * Real.log (n / 6 ^ i : ℕ) + 7) := by
+            ∑ i ∈ Finset.range t, (6 * Real.log ((n / 6 ^ i : ℕ) : ℝ) + 7)) := by
+          rw [Finset.mul_sum, ← Finset.sum_add_distrib]
           congr 1
-          rw [Finset.mul_sum]
-          rw [Finset.sum_add_distrib]
+          exact Finset.sum_congr rfl fun i _ ↦ by ring
       _ ≤ Chebyshev.theta ((n / 6 ^ t : ℕ) : ℝ) +
-            ((2 / 3 : ℝ) * Real.log 2 + (1 / 2) * Real.log 3) *
+            (((2 / 3 : ℝ) * Real.log 2 + (1 / 2) * Real.log 3) *
               ((6 : ℝ) / 5 * n) +
-            ∑ i ∈ Finset.range t, (6 * Real.log n + 7) := by
-          gcongr
-          · exact hsum_div
-          · exact Finset.sum_le_sum fun i hi ↦ by
-              have := hlog_le i hi
-              linarith
+            ∑ i ∈ Finset.range t, (6 * Real.log n + 7)) := by
+          have hcoef : (0 : ℝ) ≤ (2 / 3) * Real.log 2 + (1 / 2) * Real.log 3 := by
+            have h2 := Real.log_nonneg (show (1 : ℝ) ≤ 2 by norm_num)
+            have h3 := Real.log_nonneg (show (1 : ℝ) ≤ 3 by norm_num)
+            linarith
+          have hs2 : ∑ i ∈ Finset.range t,
+                  (6 * Real.log ((n / 6 ^ i : ℕ) : ℝ) + 7) ≤
+                ∑ i ∈ Finset.range t, (6 * Real.log (n : ℝ) + 7) := by
+            apply Finset.sum_le_sum
+            intro i hi
+            have := hlog_le i hi
+            linarith
+          have hm := mul_le_mul_of_nonneg_left hsum_div hcoef
+          linarith
       _ = _ := by simp [nsmul_eq_mul]; ring
   have hlast' : ((6 * Real.log n + 7) : ℝ) * t ≤ (6 * Real.log n + 7) * Real.log n := by
     apply mul_le_mul_of_nonneg_left ht_log
@@ -654,7 +686,7 @@ lemma eventually_log_sq_le :
     ∀ᶠ n : ℕ in Filter.atTop,
       6 * (Real.log (n : ℝ)) ^ 2 + 7 * Real.log (n : ℝ) + 7 ≤
         (33 / 1000 : ℝ) * n := by
-  have h₁ := (Real.isLittleO_log_rpow_atTop (r := (1 : ℝ) / 2)
+  have h₁ := (isLittleO_log_rpow_atTop (r := (1 : ℝ) / 2)
     (by norm_num)).comp_tendsto tendsto_natCast_atTop_atTop
   have h₁ := h₁.bound (by norm_num : (0 : ℝ) < 1 / 20)
   have h₂ := (Real.isLittleO_log_id_atTop).comp_tendsto tendsto_natCast_atTop_atTop
@@ -663,15 +695,17 @@ lemma eventually_log_sq_le :
     Filter.eventually_ge_atTop 1] with n h₁ h₂ h7000 h1
   have hn0 : (0 : ℝ) < (n : ℝ) := by exact_mod_cast h1
   have hlogn : 0 ≤ Real.log (n : ℝ) := Real.log_nonneg (by exact_mod_cast h1)
+  simp only [Function.comp_apply, id_eq] at h₁ h₂
   rw [Real.norm_eq_abs, abs_of_nonneg hlogn, Real.norm_eq_abs,
     abs_of_nonneg (by positivity : (0:ℝ) ≤ (n:ℝ) ^ (1/2 : ℝ))] at h₁
   rw [Real.norm_eq_abs, abs_of_nonneg hlogn, Real.norm_eq_abs,
-    abs_of_nonneg hn0.le, id] at h₂
+    abs_of_nonneg hn0.le] at h₂
   rw [← Real.sqrt_eq_rpow] at h₁
+  have hsqrt : (0 : ℝ) ≤ √(n : ℝ) := Real.sqrt_nonneg _
   have hsq : (Real.log (n : ℝ)) ^ 2 ≤ (√(n : ℝ) / 20) ^ 2 := by
     apply sq_le_sq'
     · linarith
-    · exact h₁
+    · linarith [h₁]
   rw [div_pow, Real.sq_sqrt (by positivity)] at hsq
   have h7 : (7 : ℝ) ≤ (1 : ℝ) / 1000 * n := by
     have : (n : ℝ) ≥ 7000 := by exact_mod_cast h7000
@@ -695,7 +729,7 @@ theorem chebyshev_theta_lt : ∃ c : ℝ, c < (127 : ℝ) / 100 ∧
   nlinarith [hn, hbound, hc1]
 
 theorem chebyshev_primorial_lt : ∃ c : ℝ, c < (127 : ℝ) / 100 ∧
-    ∀ᶠ n : ℕ in Filter.atTop, Real.log (Nat.primorial n) ≤ c * n := by
+    ∀ᶠ n : ℕ in Filter.atTop, Real.log (primorial n) ≤ c * n := by
   obtain ⟨c, hc, h⟩ := chebyshev_theta_lt
   refine ⟨c, hc, ?_⟩
   filter_upwards [h] with n hn

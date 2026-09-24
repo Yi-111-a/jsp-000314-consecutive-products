@@ -61,13 +61,14 @@ theorem lpf_div_sq_le {m p : ℕ} (hdvd : p ^ 2 ∣ m)
     · have : largestPrimeFactor m = 1 :=
         largestPrimeFactor_eq_one_iff.mpr (by omega)
       rw [this] at hlpf
+      have := hp.two_le
       omega
     · exact h
   rcases Nat.lt_or_ge (m / p ^ 2) 2 with hlt | hge
   · have h1 : largestPrimeFactor (m / p ^ 2) = 1 :=
       largestPrimeFactor_eq_one_iff.mpr (by omega)
     rw [h1]; exact hp.one_le
-  · have hd : m / p ^ 2 ∣ m := ⟨p ^ 2, Nat.div_mul_cancel hdvd⟩
+  · have hd : m / p ^ 2 ∣ m := ⟨p ^ 2, (Nat.div_mul_cancel hdvd).symm⟩
     have hq := largestPrimeFactor_prime hge
     have hdq := largestPrimeFactor_dvd hge
     calc largestPrimeFactor (m / p ^ 2)
@@ -88,12 +89,14 @@ theorem rightRunCount_le_lpfCount {x p k : ℕ} (hp : p.Prime) :
       rcases Nat.lt_or_ge m 2 with h | h
       · have : largestPrimeFactor m = 1 :=
           largestPrimeFactor_eq_one_iff.mpr (by omega)
-        rw [this] at hlpf; omega
+        rw [this] at hlpf
+        have := hp.two_le
+        omega
       · exact (by omega : 1 ≤ m)
     have hge : p ^ 2 ≤ m := Nat.le_of_dvd hm1 hdvd
-    have hr1 : 1 ≤ m / p ^ 2 := Nat.div_pos hge (Nat.pow_pos hp.pos 2)
+    have hr1 : 1 ≤ m / p ^ 2 := Nat.div_pos hge (pow_pos hp.pos 2)
     have hr2 : m / p ^ 2 ≤ 2 * x / p ^ 2 := Nat.div_le_div_right hm2x
-    rw [lpfCount, Finset.mem_coe, Finset.mem_filter, Finset.mem_Icc]
+    rw [Finset.mem_coe, Finset.mem_filter, Finset.mem_Icc]
     exact ⟨⟨hr1, hr2⟩, lpf_div_sq_le hdvd hp hlpf⟩
   · intro a ha b hb hab
     rw [Finset.mem_coe, mem_rightRunWitness] at ha hb
@@ -101,7 +104,8 @@ theorem rightRunCount_le_lpfCount {x p k : ℕ} (hp : p.Prime) :
     have hdb : p ^ 2 ∣ b := hb.2.1
     have hA : a = p ^ 2 * (a / p ^ 2) := (Nat.mul_div_cancel' hda).symm
     have hB : b = p ^ 2 * (b / p ^ 2) := (Nat.mul_div_cancel' hdb).symm
-    rw [hA, hab, ← hB]
+    have hab' : a / p ^ 2 = b / p ^ 2 := hab
+    rw [hA, hab', ← hB]
 
 /-- Each left-run cell is bounded by the `p`-smooth count at
 `2x / p²`. -/
@@ -116,12 +120,14 @@ theorem leftRunCount_le_lpfCount {x p k : ℕ} (hp : p.Prime) :
       rcases Nat.lt_or_ge m 2 with h | h
       · have : largestPrimeFactor m = 1 :=
           largestPrimeFactor_eq_one_iff.mpr (by omega)
-        rw [this] at hlpf; omega
+        rw [this] at hlpf
+        have := hp.two_le
+        omega
       · exact (by omega : 1 ≤ m)
     have hge : p ^ 2 ≤ m := Nat.le_of_dvd hm1 hdvd
-    have hr1 : 1 ≤ m / p ^ 2 := Nat.div_pos hge (Nat.pow_pos hp.pos 2)
+    have hr1 : 1 ≤ m / p ^ 2 := Nat.div_pos hge (pow_pos hp.pos 2)
     have hr2 : m / p ^ 2 ≤ 2 * x / p ^ 2 := Nat.div_le_div_right hm2x
-    rw [lpfCount, Finset.mem_coe, Finset.mem_filter, Finset.mem_Icc]
+    rw [Finset.mem_coe, Finset.mem_filter, Finset.mem_Icc]
     exact ⟨⟨hr1, hr2⟩, lpf_div_sq_le hdvd hp hlpf⟩
   · intro a ha b hb hab
     rw [Finset.mem_coe, mem_leftRunWitness] at ha hb
@@ -129,7 +135,8 @@ theorem leftRunCount_le_lpfCount {x p k : ℕ} (hp : p.Prime) :
     have hdb : p ^ 2 ∣ b := hb.2.1
     have hA : a = p ^ 2 * (a / p ^ 2) := (Nat.mul_div_cancel' hda).symm
     have hB : b = p ^ 2 * (b / p ^ 2) := (Nat.mul_div_cancel' hdb).symm
-    rw [hA, hab, ← hB]
+    have hab' : a / p ^ 2 = b / p ^ 2 := hab
+    rw [hA, hab', ← hB]
 
 /-- The full `p`-slice of the run sum is bounded by `4p · Ψ(2x/p², p)`. -/
 theorem smallBandZ_sum_le (x Z : ℕ) :
@@ -149,8 +156,8 @@ theorem smallBandZ_sum_le (x Z : ℕ) :
         omega
     _ = ∑ p ∈ Nat.primesLE Z, (2 * p) * (2 * lpfCount (2 * x / p ^ 2) p) := by
         apply Finset.sum_congr rfl; intro p _
-        rw [Finset.sum_const, Nat.nsmul_eq_mul, Nat.card_Icc]
-        congr 1; omega
+        rw [Finset.sum_const, Nat.nsmul_eq_mul, Nat.card_Icc,
+          Nat.add_sub_cancel]
     _ = 4 * ∑ p ∈ Nat.primesLE Z, p * lpfCount (2 * x / p ^ 2) p := by
         rw [Finset.mul_sum]; apply Finset.sum_congr rfl; intro p _; ring
 
@@ -174,10 +181,8 @@ theorem rpow_neg_le_three_quarters {q : ℕ} (hq : q.Prime) {σ : ℝ}
     rw [← Real.sqrt_eq_rpow]
   have h4 : (√2)⁻¹ ≤ 3 / 4 := by
     rw [inv_le_iff_one_le_mul₀ (Real.sqrt_pos.mpr (by norm_num : (0:ℝ) < 2))]
-    have : (4/3 : ℝ) ≤ √2 := by
-      rw [Real.le_sqrt (by norm_num : (0:ℝ) ≤ 4/3)]
-      norm_num
-    rw [one_mul]; linarith
+    have h43 : (4/3 : ℝ) ≤ √2 := Real.le_sqrt_of_sq_le (by norm_num)
+    linarith
   exact h1.trans (h2.trans (by rw [h3]; exact h4))
 
 /-- For `0 ≤ t ≤ 3/4`, `-log(1 - t) ≤ 4t`. -/
@@ -189,7 +194,7 @@ theorem neg_log_one_sub_le {t : ℝ} (ht0 : 0 ≤ t) (ht : t ≤ 3 / 4) :
   rw [h1]
   calc Real.log ((1 - t)⁻¹)
       ≤ (1 - t)⁻¹ - 1 := Real.log_le_sub_one_of_pos (inv_pos.mpr h1t)
-    _ = t / (1 - t) := by field_simp
+    _ = t / (1 - t) := by field_simp; ring
     _ ≤ 4 * t := by
         rw [div_le_iff₀ h1t]
         nlinarith
@@ -211,7 +216,7 @@ theorem eulerProd_le_exp (Z : ℕ) {σ : ℝ} (hσ : (1 : ℝ) / 2 ≤ σ)
   have hprod_pos : 0 < ∏ q ∈ Nat.primesLE Z, (1 - (q : ℝ) ^ (-σ))⁻¹ :=
     Finset.prod_pos fun q hq => inv_pos.mpr (hfac q hq)
   rw [← Real.exp_log hprod_pos, Real.exp_le_exp]
-  rw [Real.log_prod _ _ (fun q hq => (hfac q hq).ne')]
+  rw [Real.log_prod (fun q hq => inv_ne_zero (hfac q hq).ne')]
   calc ∑ q ∈ Nat.primesLE Z, Real.log ((1 - (q : ℝ) ^ (-σ))⁻¹)
       = ∑ q ∈ Nat.primesLE Z, -Real.log (1 - (q : ℝ) ^ (-σ)) := by
         apply Finset.sum_congr rfl; intro q _
@@ -243,11 +248,9 @@ theorem inv_le_log_div_pred {q : ℕ} (hq : 2 ≤ q) :
         ≤ q * Real.log 2 := h1
       _ ≤ q * Real.log q :=
           mul_le_mul_of_nonneg_left hlogq (by positivity)
-  rw [div_le_iff₀ (mul_pos (by linarith) hlog2)]
-  -- goal: (q:ℝ)⁻¹ · ((q-1)·log 2) ≤ log q  →  via (q-1)log2 ≤ q·logq
-  rw [mul_comm, ← div_le_iff₀ (by positivity : (0:ℝ) < q)]
-  calc ((q - 1 : ℕ) : ℝ) * Real.log 2 / q
-      ≤ q * Real.log q / q :=
-        div_le_div_of_nonneg_right? -- placeholder
-    _ = Real.log q := by field_simp
-  sorry
+  have hq0 : (q : ℝ) ≠ 0 := by exact_mod_cast (by omega : q ≠ 0)
+  rw [div_div, le_div_iff₀ (mul_pos (by linarith) hlog2)]
+  calc (q : ℝ)⁻¹ * (((q - 1 : ℕ) : ℝ) * Real.log 2)
+      ≤ (q : ℝ)⁻¹ * (q * Real.log q) :=
+        mul_le_mul_of_nonneg_left hkey (by positivity)
+    _ = Real.log q := inv_mul_cancel_left₀ hq0 _

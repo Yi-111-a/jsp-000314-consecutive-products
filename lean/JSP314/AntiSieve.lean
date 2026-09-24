@@ -1,4 +1,5 @@
-import JSP314.APPsi
+import JSP314.RunSieve
+import JSP314.ErdosTk
 import Mathlib.Tactic
 
 /-!
@@ -188,10 +189,94 @@ theorem smoothCount_mono {N₁ N₂ y : ℕ} (h : N₁ ≤ N₂) :
     smoothCount N₁ y ≤ smoothCount N₂ y := by
   apply Finset.card_le_card
   intro s hs
-  rw [Finset.mem_filter] at hs ⊢
+  simp only [smoothFinset, Finset.mem_filter] at hs ⊢
   obtain ⟨hsI, hlp⟩ := hs
   obtain ⟨hs1, hsN⟩ := Finset.mem_Icc.mp hsI
   exact ⟨Finset.mem_Icc.mpr ⟨hs1, hsN.trans h⟩, hlp⟩
+
+/-! ### Bridge lemmas (formerly imported from `JSP314.APPsi`)
+
+`JSP314.APPsi` is currently broken upstream, so the handful of results this
+file needs from it — the `rightRunCount → apSmoothParamCount` injection and
+the harmonic/prime-reciprocal bounds — are proved here directly (identical
+statements and proofs, no new content). -/
+
+/-- For a `k = 1` right run witness `m`, `r = m/p²` lies in `[1, 2x/p²]` and
+`p²·r + 1 = m + 1` is `p`-smooth. -/
+theorem rightRunWitness_one_div_mem {x p m : ℕ} (hp : Nat.Prime p)
+    (hm : m ∈ rightRunWitness x p 1) :
+    m / p ^ 2 ∈ (Finset.Icc 1 (2 * x / p ^ 2)).filter
+      (fun r => largestPrimeFactor (p ^ 2 * r + 1) ≤ p) := by
+  rw [mem_rightRunWitness] at hm
+  obtain ⟨hm2x, hdvd, hlpf, hsmooth⟩ := hm
+  have hm1 : 1 ≤ m := witness_pos hp hdvd hlpf
+  have hp2 : 0 < p ^ 2 := Nat.pow_pos hp.pos
+  rw [Finset.mem_filter]
+  refine ⟨Finset.mem_Icc.mpr
+      ⟨Nat.div_pos (Nat.le_of_dvd hm1 hdvd) hp2, Nat.div_le_div_right hm2x⟩,
+    ?_⟩
+  have hrew : p ^ 2 * (m / p ^ 2) + 1 = m + 1 := by
+    rw [Nat.mul_div_cancel' hdvd]
+  rw [hrew]
+  exact hsmooth (m + 1) (Finset.mem_Icc.mpr ⟨le_refl _, le_refl _⟩)
+
+/-- **Bridge (right):** `rightRunCount x p 1` is at most the AP smooth count
+`apSmoothParamCount 1 (2x/p²) (p²) 1 p`. -/
+theorem rightRunCount_one_le_apSmoothParamCount {x p : ℕ} (hp : Nat.Prime p) :
+    rightRunCount x p 1 ≤ apSmoothParamCount 1 (2 * x / p ^ 2) (p ^ 2) 1 p := by
+  classical
+  apply Finset.card_le_card_of_injOn (fun m => m / p ^ 2)
+  · intro m hm
+    rw [Finset.mem_coe]
+    exact rightRunWitness_one_div_mem hp (Finset.mem_coe.mp hm)
+  · intro a ha b hb hab
+    exact div_injOn hp.pos
+      (mem_rightRunWitness.mp (Finset.mem_coe.mp ha)).2.1
+      (mem_rightRunWitness.mp (Finset.mem_coe.mp hb)).2.1 hab
+
+/-- `1/(N+1) ≤ log(N+1) − log N` for `N ≥ 1`. -/
+theorem one_div_succ_le_log_sub_log {N : ℕ} (hN : 1 ≤ N) :
+    (1 : ℝ) / ((N : ℝ) + 1) ≤ Real.log ((N : ℝ) + 1) - Real.log N := by
+  have hNR : (0 : ℝ) < (N : ℝ) := by exact_mod_cast hN
+  have hN1 : (0 : ℝ) < (N : ℝ) + 1 := by positivity
+  have hle := Real.log_le_sub_one_of_pos (x := (N : ℝ) / ((N : ℝ) + 1))
+    (div_pos hNR hN1)
+  rw [Real.log_div hNR.ne' hN1.ne'] at hle
+  have h4 : (N : ℝ) / ((N : ℝ) + 1) - 1 = -((N : ℝ) + 1)⁻¹ := by
+    field_simp
+    ring
+  rw [h4] at hle
+  rw [one_div]
+  linarith
+
+/-- Harmonic bound over a range: `∑_{i<N} 1/(i+1) ≤ 1 + log N`. -/
+theorem sum_range_one_div_succ_le (N : ℕ) :
+    ∑ i ∈ Finset.range N, (1 : ℝ) / ((i : ℝ) + 1) ≤ 1 + Real.log N := by
+  induction N with
+  | zero => simp
+  | succ N ih =>
+    rw [Finset.sum_range_succ]
+    rcases Nat.eq_zero_or_pos N with rfl | hpos
+    · simp
+    · have hstep := one_div_succ_le_log_sub_log hpos
+      have hcast : ((N + 1 : ℕ) : ℝ) = (N : ℝ) + 1 := by push_cast; ring
+      rw [hcast]
+      linarith
+
+/-- Primes reciprocal bound: `∑_{p ≤ y} 1/p ≤ 1 + log y`. -/
+theorem sum_primesLE_inv_le (y : ℕ) :
+    ∑ p ∈ Nat.primesLE y, (1 : ℝ) / p ≤ 1 + Real.log y := by
+  rw [Nat.primesLE_eq_filter_range]
+  calc ∑ p ∈ (Finset.range (y + 1)).filter Nat.Prime, (1 : ℝ) / p
+      ≤ ∑ n ∈ Finset.range (y + 1), (1 : ℝ) / n :=
+        Finset.sum_le_sum_of_subset_of_nonneg (Finset.filter_subset _ _)
+          fun i _ _ => by positivity
+    _ = ∑ i ∈ Finset.range y, (1 : ℝ) / ((i : ℝ) + 1) := by
+        rw [Finset.sum_range_succ', Nat.cast_zero, div_zero, add_zero]
+        apply Finset.sum_congr rfl
+        intro i _
+        rw [Nat.cast_add, Nat.cast_one]
+    _ ≤ 1 + Real.log y := sum_range_one_div_succ_le y
 
 /-! ### Task 1: the count-level identity `T₁ = |smoothCongruentOne|` -/
 
@@ -202,7 +287,7 @@ theorem apSmoothParamCount_one_eq_smoothCongruentOne (hi p : ℕ) (hp : 2 ≤ p)
     apSmoothParamCount 1 hi (p ^ 2) 1 p =
       (smoothCongruentOne (p ^ 2 * hi + 1) p).card := by
   classical
-  have hp2 : 0 < p ^ 2 := Nat.pow_pos (by omega) 2
+  have hp2 : 0 < p ^ 2 := Nat.pow_pos (show 0 < p by omega)
   have hp2' : 1 < p ^ 2 := Nat.one_lt_pow two_ne_zero (one_lt_two.trans_le hp)
   apply Finset.card_bij (fun r _ => p ^ 2 * r + 1)
   · intro r hr
@@ -214,7 +299,7 @@ theorem apSmoothParamCount_one_eq_smoothCongruentOne (hi p : ℕ) (hp : 2 ≤ p)
     refine ⟨by omega, Nat.add_le_add_right (Nat.mul_le_mul_left _ hrhi) 1,
       hlpf, ?_⟩
     rw [show p ^ 2 * r + 1 = 1 + r * p ^ 2 by rw [mul_comm, add_comm],
-      Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt hp2']
+      Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt hp2']
   · intro a₁ _ a₂ _ h
     have h' : p ^ 2 * a₁ = p ^ 2 * a₂ := by omega
     exact Nat.eq_of_mul_eq_mul_left hp2 h'
@@ -280,7 +365,7 @@ theorem card_smoothCongruentOne_le_cofactorFinset (N p : ℕ) (hp : 2 ≤ p) :
     have h2 : a / largestPrimeFactor a = b / largestPrimeFactor b :=
       congrArg Prod.fst hab
     have h3 : a = largestPrimeFactor b * (a / largestPrimeFactor a) := by
-      rw [h1]
+      rw [← h1]
       exact (Nat.mul_div_cancel' (largestPrimeFactor_dvd ha2)).symm
     calc a = largestPrimeFactor b * (a / largestPrimeFactor a) := h3
       _ = largestPrimeFactor b * (b / largestPrimeFactor b) := by rw [h2]
@@ -355,7 +440,8 @@ theorem cofactorPair_q_unique {N p m q₁ q₂ : ℕ} (hp : 2 ≤ p)
   obtain ⟨-, -, hq1a, hqp1, -, -, hc1, -⟩ := mem_cofactorFinset.mp h₁
   obtain ⟨-, -, hq2a, hqp2, -, -, hc2, -⟩ := mem_cofactorFinset.mp h₂
   have hcong : q₁ ≡ q₂ [MOD p ^ 2] :=
-    modEq_of_mul_modEq_one (Nat.pow_pos (by omega) 2) hc1 hc2
+    modEq_of_mul_modEq_one (Nat.pow_pos (show 0 < p by omega))
+      (mul_comm q₁ m ▸ hc1) (mul_comm q₂ m ▸ hc2)
   have hle : p ≤ p ^ 2 := Nat.le_self_pow (by norm_num) p
   rcases le_total q₁ q₂ with hqq | hqq
   · have hd : p ^ 2 ∣ q₂ - q₁ := (Nat.modEq_iff_dvd' hqq).mp hcong
@@ -444,8 +530,9 @@ theorem card_fiber_le_smoothPartner {N p q : ℕ} (hp : 2 ≤ p) (hq : q.Prime) 
     have hb2 : 2 ≤ b := (mem_smoothCongruentOne.mp hb).1
     have hda : q ∣ a := hqa ▸ largestPrimeFactor_dvd ha2
     have hdb : q ∣ b := hqb ▸ largestPrimeFactor_dvd hb2
+    have hab' : a / q = b / q := hab
     calc a = q * (a / q) := (Nat.mul_div_cancel' hda).symm
-      _ = q * (b / q) := by rw [hab]
+      _ = q * (b / q) := by rw [hab']
       _ = b := Nat.mul_div_cancel' hdb
 
 /-- **Exact fiber decomposition.**  The anti-sieve set is the disjoint
@@ -479,7 +566,8 @@ theorem smoothCongruentOne_card_eq_sum_fiber (N p : ℕ) (hp : 2 ≤ p) :
     exact Finset.disjoint_left.mpr fun s hs₁ hs₂ =>
       hne ((Finset.mem_filter.mp hs₁).2.symm.trans
         (Finset.mem_filter.mp hs₂).2)
-  rw [hU, Finset.card_biUnion hdis]
+  conv_lhs => rw [hU]
+  rw [Finset.card_biUnion hdis]
 
 /-- **Per-prime partner bound.**  `T₁ ≤ ∑_{q prime < p} Ψ_q(N/q; p², q⁻¹)`,
 where the inner count is the `q`-smooth `m ≤ N/q` with `q·m ≡ 1 (mod p²)`. -/
@@ -498,7 +586,8 @@ theorem smoothCongruentOne_card_le_sum_partner (N p : ℕ) (hp : 2 ≤ p) :
 theorem card_residue_class_le (M K a : ℕ) :
     ((Finset.Icc 1 M).filter fun m => m ≡ a [MOD K]).card ≤ M / K + 1 := by
   classical
-  refine (Finset.card_le_card_of_injOn (· / K) ?_ ?_).trans ?_
+  refine (Finset.card_le_card_of_injOn
+    (t := Finset.Icc 0 (M / K)) (· / K) ?_ ?_).trans ?_
   · intro m hm
     obtain ⟨-, hmM⟩ := Finset.mem_Icc.mp
       (Finset.mem_filter.mp (Finset.mem_coe.mp hm)).1
@@ -509,11 +598,13 @@ theorem card_residue_class_le (M K a : ℕ) :
     have hmod : a % K = b % K := hae.trans hbe.symm
     have hda := Nat.div_add_mod a K
     have hdb := Nat.div_add_mod b K
+    have hab' : a / K = b / K := hab
     calc a = K * (a / K) + a % K := hda.symm
-      _ = K * (b / K) + b % K := by rw [hab, hmod]
+      _ = K * (b / K) + b % K := by rw [hab', hmod]
       _ = b := hdb
-  · rw [Nat.card_Icc]
-    omega
+  · have hcard : (Finset.Icc 0 (M / K)).card = M / K + 1 := by
+      rw [Nat.card_Icc, Nat.sub_zero]
+    exact le_of_eq hcard
 
 /-- Any two elements of the partner set are congruent `mod K`. -/
 theorem smoothPartner_modEq {M y K q m₁ m₂ : ℕ}
@@ -569,7 +660,7 @@ theorem smoothCongruentOne_card_le_sum (N p : ℕ) (hp : 2 ≤ p) :
   intro q _
   calc smoothPartnerCount (N / q) q (p ^ 2) q
       ≤ N / q / p ^ 2 + 1 :=
-        smoothPartnerCount_le _ _ _ _ (Nat.pow_pos (by omega) 2)
+        smoothPartnerCount_le _ _ _ _ (Nat.pow_pos (show 0 < p by omega))
     _ = N / (q * p ^ 2) + 1 := by rw [Nat.div_div_eq_div_mul]
 
 /-- `|primesLE n| ≤ n + 1`. -/
@@ -617,8 +708,7 @@ theorem smoothCongruentOne_card_le_real (N p : ℕ) (hp : 2 ≤ p) :
             exact_mod_cast (Nat.prime_of_mem_primesLE hq).pos
           have hpR : (0 : ℝ) < (p : ℝ) := by
             exact_mod_cast (by omega : 0 < p)
-          field_simp
-          ring
+          rw [mul_comm (q : ℝ) ((p : ℝ) ^ 2), ← div_div, mul_one_div]
         · rw [Finset.sum_const, nsmul_eq_mul, mul_one]
     _ ≤ (N : ℝ) / p ^ 2 * (1 + Real.log (p - 1)) + p := by
         have hcard : ((Nat.primesLE (p - 1)).card : ℝ) ≤ p := by
@@ -627,6 +717,9 @@ theorem smoothCongruentOne_card_le_real (N p : ℕ) (hp : 2 ≤ p) :
           exact_mod_cast h'
         apply add_le_add _ hcard
         apply mul_le_mul_of_nonneg_left _ (by positivity)
+        have hlog : Real.log ((p : ℝ) - 1) = Real.log ((p - 1 : ℕ) : ℝ) := by
+          rw [Nat.cast_sub (show 1 ≤ p by omega), Nat.cast_one]
+        rw [hlog]
         exact sum_primesLE_inv_le (p - 1)
 
 /-- **Headline elementary bound on `T₁`:**
@@ -665,10 +758,671 @@ theorem rightRunCount_one_le_smoothCount {x p : ℕ} (hp : Nat.Prime p) :
 theorem rightRunCount_one_le_real {x p : ℕ} (hp : Nat.Prime p) :
     (rightRunCount x p 1 : ℝ) ≤
       ((2 * x + 1 : ℕ) : ℝ) / (p : ℝ) ^ 2 * (1 + Real.log (p - 1)) + p := by
-  have h1 := rightRunCount_one_le_smoothCongruentOne hp
+  have h1 : rightRunCount x p 1 ≤ (smoothCongruentOne (2 * x + 1) p).card :=
+    rightRunCount_one_le_smoothCongruentOne hp
   have h2 := smoothCongruentOne_card_le_real (2 * x + 1) p hp.two_le
   calc (rightRunCount x p 1 : ℝ)
       ≤ ((smoothCongruentOne (2 * x + 1) p).card : ℝ) := Nat.cast_le.mpr h1
     _ ≤ ((2 * x + 1 : ℕ) : ℝ) / (p : ℝ) ^ 2 * (1 + Real.log (p - 1)) + p := h2
+
+/-! ### Crude-moment machinery (new content)
+
+The remaining sections formalize the **elementary** inputs of Tao's
+anti-sieve (arXiv:2603.27990, Props 6.7(i)/6.8(i) shape) at the level of the
+`T₁` problem:
+
+* `coprime_of_mul_modEq`, `modEq_of_mul_modEq_of_coprime` — the cancellation
+  lemmas for a general invertible residue class `c (mod K)` (the file's
+  `coprime_of_mul_modEq_one`/`modEq_of_mul_modEq_one` are the `c = 1` case).
+* `sum_Ioc_inv_le_log_sub_log`, `sum_primesLE_Ioc_inv_le` — the
+  **prime-band moment** `∑_{a<q≤b} 1/q ≤ log b − log a`: the number of
+  primes in `(z^{1−δ}, z^{1+δ}]` entering the anatomy, at logarithmic
+  precision.
+* `smoothCongruentOneLpfLe`, `smoothCongruentOneLpfBand` — the anatomy split
+  of `T₁` by the largest prime factor: the `lpf ≤ a` part is bounded by
+  `Ψ(N, a)` (Rankin territory), the `a < lpf ≤ b` band part by
+  `(N/p²)·log(b/a) + b`.  Combined:
+  `T₁ ≤ Ψ(N,a) + (N/p²)·log((p−1)/a) + p`.
+* `primePairCongFinset`, `primePairCong₂Finset` — the **freeze-prime
+  moments**: for an invertible class `a (mod p)` the number of prime pairs
+  `(q₁,q₂) ∈ [1,P₁]×[1,P₂]` with `q₁q₂ ≡ a (mod p)` is at most
+  `π(P₁)·(P₂/p + 1)` — a `1/p`-density bound (Prop 6.7(i) shape); and with
+  *two* congruences modulo distinct primes the count is
+  `π(P₁)·(P₂/(p·p') + 1)` — the `1/(pp')` correlation of Prop 6.8(i).
+* `smoothCongruentOne_card_le_of_partner_bound` — the conditional
+  `p₀^{-2}` theorem: the missing equidistribution input is isolated as an
+  explicit hypothesis. -/
+
+/-- If `a·b ≡ c (mod K)` with `gcd(c, K) = 1`, then each factor is coprime
+to `K` (generalization of `coprime_of_mul_modEq_one`). -/
+theorem coprime_of_mul_modEq {K a b c : ℕ} (hK : 0 < K)
+    (h : a * b ≡ c [MOD K]) (hc : Nat.Coprime c K) :
+    Nat.Coprime a K ∧ Nat.Coprime b K := by
+  have hmod : (a * b) % K = c % K := h
+  have hdvd : a * b - K * ((a * b) / K) = c % K := by
+    have hdiv := Nat.div_add_mod (a * b) K
+    omega
+  have hg1 : Nat.gcd a K ∣ c % K := by
+    have h1 : Nat.gcd a K ∣ a * b :=
+      (Nat.gcd_dvd_left a K).trans (dvd_mul_right a b)
+    have h2 : Nat.gcd a K ∣ K * ((a * b) / K) :=
+      (Nat.gcd_dvd_right a K).trans (dvd_mul_right K _)
+    have h3 := Nat.dvd_sub h1 h2
+    rwa [hdvd] at h3
+  have hg1c : Nat.gcd a K ∣ c := by
+    have h5 : Nat.gcd a K ∣ K * (c / K) :=
+      (Nat.gcd_dvd_right a K).trans (dvd_mul_right K _)
+    have h6 : Nat.gcd a K ∣ c % K + K * (c / K) := hg1.add h5
+    rwa [Nat.mod_add_div] at h6
+  have hg2 : Nat.gcd b K ∣ c % K := by
+    have h1 : Nat.gcd b K ∣ a * b :=
+      (Nat.gcd_dvd_left b K).trans (dvd_mul_left b a)
+    have h2 : Nat.gcd b K ∣ K * ((a * b) / K) :=
+      (Nat.gcd_dvd_right b K).trans (dvd_mul_right K _)
+    have h3 := Nat.dvd_sub h1 h2
+    rwa [hdvd] at h3
+  have hg2c : Nat.gcd b K ∣ c := by
+    have h5 : Nat.gcd b K ∣ K * (c / K) :=
+      (Nat.gcd_dvd_right b K).trans (dvd_mul_right K _)
+    have h6 : Nat.gcd b K ∣ c % K + K * (c / K) := hg2.add h5
+    rwa [Nat.mod_add_div] at h6
+  constructor
+  · have hd : Nat.gcd a K ∣ Nat.gcd c K :=
+      Nat.dvd_gcd hg1c (Nat.gcd_dvd_right a K)
+    rw [hc] at hd
+    show Nat.gcd a K = 1
+    have hle := Nat.le_of_dvd one_pos hd
+    omega
+  · have hd : Nat.gcd b K ∣ Nat.gcd c K :=
+      Nat.dvd_gcd hg2c (Nat.gcd_dvd_right b K)
+    rw [hc] at hd
+    show Nat.gcd b K = 1
+    have hle := Nat.le_of_dvd one_pos hd
+    omega
+
+/-- **Cancellation in a general invertible class**: if `q·m₁` and `q·m₂`
+are both `≡ c (mod K)` with `gcd(c, K) = 1` then `m₁ ≡ m₂ (mod K)`
+(generalization of `modEq_of_mul_modEq_one`). -/
+theorem modEq_of_mul_modEq_of_coprime {K q c m₁ m₂ : ℕ} (hK : 0 < K)
+    (h1 : q * m₁ ≡ c [MOD K]) (h2 : q * m₂ ≡ c [MOD K])
+    (hc : Nat.Coprime c K) :
+    m₁ ≡ m₂ [MOD K] := by
+  have hcop : Nat.Coprime K q :=
+    ((coprime_of_mul_modEq hK h1 hc).1).symm
+  rcases le_total m₁ m₂ with h | h
+  · have hmul : q * m₁ ≤ q * m₂ := Nat.mul_le_mul_left q h
+    have hd : K ∣ q * m₂ - q * m₁ :=
+      (Nat.modEq_iff_dvd' hmul).mp (h1.trans h2.symm)
+    rw [← Nat.mul_sub_left_distrib] at hd
+    exact (Nat.modEq_iff_dvd' h).mpr (hcop.dvd_mul_left.mp hd)
+  · have hmul : q * m₂ ≤ q * m₁ := Nat.mul_le_mul_left q h
+    have hd : K ∣ q * m₁ - q * m₂ :=
+      (Nat.modEq_iff_dvd' hmul).mp (h2.trans h1.symm)
+    rw [← Nat.mul_sub_left_distrib] at hd
+    exact ((Nat.modEq_iff_dvd' h).mpr (hcop.dvd_mul_left.mp hd)).symm
+
+/-! ### The prime-band moment: `∑_{a<q≤b} 1/q ≤ log b − log a` -/
+
+/-- **Harmonic bound on an interval**: `∑_{a<n≤b} 1/n ≤ log b − log a`
+(for `1 ≤ a`).  Proved by telescoping `1/(n) ≤ log n − log (n−1)`. -/
+theorem sum_Ioc_inv_le_log_sub_log {a b : ℕ} (ha : 1 ≤ a) :
+    ∑ n ∈ Finset.Icc (a + 1) b, (1 : ℝ) / n ≤ Real.log b - Real.log a := by
+  rcases le_or_lt b a with hba | hab
+  · rw [Finset.Icc_eq_empty (by omega : b < a + 1), Finset.sum_empty]
+    rcases Nat.eq_zero_or_pos b with hb | hb
+    · subst hb
+      rw [Nat.cast_zero, Real.log_zero]
+      have hlog : 0 ≤ Real.log (a : ℝ) :=
+        Real.log_nonneg (by exact_mod_cast ha)
+      linarith
+    · have hle : Real.log (b : ℝ) ≤ Real.log (a : ℝ) :=
+        Real.log_le_log (by exact_mod_cast hb) (by exact_mod_cast hba)
+      linarith
+  · have hcast : ∀ i : ℕ, ((a + 1 + i : ℕ) : ℝ) = (a : ℝ) + 1 + i := by
+      intro i; push_cast; ring
+    calc ∑ n ∈ Finset.Icc (a + 1) b, (1 : ℝ) / n
+        = ∑ i ∈ Finset.range (b - a), (1 : ℝ) / ((a + 1 + i : ℕ) : ℝ) := by
+          rw [show Finset.Icc (a + 1) b = Finset.Ico (a + 1) (b + 1) from rfl,
+            Finset.sum_Ico_eq_sum_range]
+          congr 1
+          · omega
+          · apply Finset.sum_congr rfl
+            intro i _
+            rw [hcast i]
+            congr 1
+            push_cast
+            ring
+      _ ≤ ∑ i ∈ Finset.range (b - a),
+            (Real.log ((a : ℝ) + 1 + i) - Real.log ((a : ℝ) + i)) := by
+          apply Finset.sum_le_sum
+          intro i _
+          rw [hcast i]
+          have hstep := one_div_succ_le_log_sub_log
+            (show 1 ≤ a + i by omega : 1 ≤ a + i)
+          have hcast' : ((a + i : ℕ) : ℝ) = (a : ℝ) + i := by push_cast; ring
+          rw [hcast'] at hstep
+          exact hstep
+      _ = Real.log ((a : ℝ) + (b - a : ℕ)) - Real.log (a : ℝ) := by
+          rw [Finset.sum_range_sub (fun i => Real.log ((a : ℝ) + i)) (b - a)]
+          congr 1
+          · congr 1
+            push_cast
+            ring
+          · simp
+      _ = Real.log b - Real.log a := by
+          rw [Nat.add_sub_cancel' (Nat.le_of_lt hab)]
+
+/-- **Prime-band reciprocal moment** (Ta26c's `(z^{1−δ}, z^{1+δ}]` prime
+supply, at logarithmic precision):
+`∑_{a < q ≤ b, q prime} 1/q ≤ log b − log a`. -/
+theorem sum_primesLE_Ioc_inv_le {a b : ℕ} (ha : 1 ≤ a) :
+    ∑ q ∈ (Nat.primesLE b).filter fun q => a < q, (1 : ℝ) / q ≤
+      Real.log b - Real.log a := by
+  calc ∑ q ∈ (Nat.primesLE b).filter fun q => a < q, (1 : ℝ) / q
+      ≤ ∑ n ∈ Finset.Icc (a + 1) b, (1 : ℝ) / n := by
+        apply Finset.sum_le_sum_of_subset_of_nonneg
+        · intro q hq
+          obtain ⟨hqb, hqa⟩ := Finset.mem_filter.mp hq
+          have hq2 := (Nat.prime_of_mem_primesLE hqb).two_le
+          have hqb' := Nat.le_of_mem_primesLE hqb
+          exact Finset.mem_Icc.mpr ⟨by omega, hqb'⟩
+        · intro i _ _
+          positivity
+    _ ≤ Real.log b - Real.log a := sum_Ioc_inv_le_log_sub_log ha
+
+/-! ### Anatomy split of `T₁` by the largest prime factor -/
+
+/-- Anti-sieve elements whose largest prime factor is `≤ a`: the part of
+`T₁` supported on integers with **no** prime factor in `(a, p)`. -/
+def smoothCongruentOneLpfLe (N p a : ℕ) : Finset ℕ :=
+  (smoothCongruentOne N p).filter fun s => largestPrimeFactor s ≤ a
+
+/-- Anti-sieve elements whose largest prime factor lies in `(a, b]`. -/
+def smoothCongruentOneLpfBand (N p a b : ℕ) : Finset ℕ :=
+  (smoothCongruentOne N p).filter fun s =>
+    a < largestPrimeFactor s ∧ largestPrimeFactor s ≤ b
+
+/-- The `lpf ≤ a` part of `T₁` is bounded by the `a`-smooth count
+`Ψ(N, a)` — Rankin territory. -/
+theorem smoothCongruentOneLpfLe_card_le (N p a : ℕ) :
+    (smoothCongruentOneLpfLe N p a).card ≤ smoothCount N a := by
+  apply Finset.card_le_card
+  intro s hs
+  obtain ⟨hs, hlpa⟩ := Finset.mem_filter.mp hs
+  obtain ⟨hs2, hsN, -, -⟩ := mem_smoothCongruentOne.mp hs
+  exact Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨by omega, hsN⟩, hlpa⟩
+
+/-- Exact fiber decomposition of the band part: the band set is the
+disjoint union, over primes `q ∈ (a, b]`, of the `largestPrimeFactor = q`
+fibers of the anti-sieve set. -/
+theorem smoothCongruentOneLpfBand_card_eq_sum (N p a b : ℕ) :
+    (smoothCongruentOneLpfBand N p a b).card =
+      ∑ q ∈ (Nat.primesLE b).filter fun q => a < q,
+        ((smoothCongruentOne N p).filter
+          fun s => largestPrimeFactor s = q).card := by
+  classical
+  have hU : smoothCongruentOneLpfBand N p a b =
+      ((Nat.primesLE b).filter fun q => a < q).biUnion
+        fun q => (smoothCongruentOne N p).filter
+          fun s => largestPrimeFactor s = q := by
+    ext s
+    rw [Finset.mem_biUnion]
+    constructor
+    · intro hs
+      obtain ⟨hsmem, ⟨hga, hgb⟩⟩ := Finset.mem_filter.mp hs
+      obtain ⟨hs2, -, -, -⟩ := mem_smoothCongruentOne.mp hsmem
+      refine ⟨largestPrimeFactor s, ?_, ?_⟩
+      · exact Finset.mem_filter.mpr
+          ⟨Nat.mem_primesLE.mpr ⟨hgb, largestPrimeFactor_prime hs2⟩, hga⟩
+      · exact Finset.mem_filter.mpr ⟨hsmem, rfl⟩
+    · rintro ⟨q, -, hs⟩
+      exact (Finset.mem_filter.mp hs).1
+  have hdis : (((Nat.primesLE b).filter fun q => a < q : Finset ℕ) : Set ℕ).
+      PairwiseDisjoint
+        fun q => (smoothCongruentOne N p).filter
+          fun s => largestPrimeFactor s = q := by
+    intro q₁ _ q₂ _ hne
+    exact Finset.disjoint_left.mpr fun s hs₁ hs₂ =>
+      hne ((Finset.mem_filter.mp hs₁).2.symm.trans
+        (Finset.mem_filter.mp hs₂).2)
+  conv_lhs => rw [hU]
+  rw [Finset.card_biUnion hdis]
+
+/-- **Band-part count bound**: the `(a, b]`-band contribution to `T₁` is at
+most `∑_{a<q≤b, q prime} (N/(q·p²) + 1)`. -/
+theorem smoothCongruentOneLpfBand_card_le_sum (N p a b : ℕ) (hp : 2 ≤ p) :
+    (smoothCongruentOneLpfBand N p a b).card ≤
+      ∑ q ∈ (Nat.primesLE b).filter fun q => a < q, (N / (q * p ^ 2) + 1) := by
+  rw [smoothCongruentOneLpfBand_card_eq_sum]
+  apply Finset.sum_le_sum
+  intro q hq
+  have hqprime : q.Prime :=
+    Nat.prime_of_mem_primesLE (Finset.mem_filter.mp hq).1
+  calc ((smoothCongruentOne N p).filter fun s => largestPrimeFactor s = q).card
+      ≤ smoothPartnerCount (N / q) q (p ^ 2) q :=
+        card_fiber_le_smoothPartner hp hqprime
+    _ ≤ N / q / p ^ 2 + 1 :=
+        smoothPartnerCount_le _ _ _ _ (Nat.pow_pos (show 0 < p by omega))
+    _ = N / (q * p ^ 2) + 1 := by rw [Nat.div_div_eq_div_mul]
+
+/-- **Real form of the band-part bound**:
+`|smoothCongruentOneLpfBand N p a b| ≤ (N/p²)·(log b − log a) + b`. -/
+theorem smoothCongruentOneLpfBand_card_le_real (N p a b : ℕ) (hp : 2 ≤ p)
+    (ha : 1 ≤ a) :
+    ((smoothCongruentOneLpfBand N p a b).card : ℝ) ≤
+      (N : ℝ) / (p : ℝ) ^ 2 * (Real.log b - Real.log a) + b := by
+  classical
+  set S := (Nat.primesLE b).filter fun q => a < q
+  have hsum : (smoothCongruentOneLpfBand N p a b).card ≤
+      ∑ q ∈ S, (N / (q * p ^ 2) + 1) :=
+    smoothCongruentOneLpfBand_card_le_sum N p a b hp
+  have hterm : ∀ q ∈ S,
+      ((N / (q * p ^ 2) + 1 : ℕ) : ℝ) ≤ (N : ℝ) / (q * (p : ℝ) ^ 2) + 1 := by
+    intro q _
+    push_cast
+    have h : (((N / (q * p ^ 2)) : ℕ) : ℝ) ≤
+        (N : ℝ) / (((q * p ^ 2) : ℕ) : ℝ) := Nat.cast_div_le
+    rw [Nat.cast_mul, Nat.cast_pow] at h
+    linarith [h]
+  have hcardS : (S.card : ℝ) ≤ b := by
+    have hsub : S ⊆ Finset.Icc (a + 1) b := by
+      intro q hq
+      obtain ⟨hqb, hqa⟩ := Finset.mem_filter.mp hq
+      have hq2 := (Nat.prime_of_mem_primesLE hqb).two_le
+      have hqb' := Nat.le_of_mem_primesLE hqb
+      exact Finset.mem_Icc.mpr ⟨by omega, hqb'⟩
+    have hcard : S.card ≤ (Finset.Icc (a + 1) b).card := Finset.card_le_card hsub
+    rw [Nat.card_Icc] at hcard
+    have : S.card ≤ b := by omega
+    exact_mod_cast this
+  calc ((smoothCongruentOneLpfBand N p a b).card : ℝ)
+      ≤ ((∑ q ∈ S, (N / (q * p ^ 2) + 1)) : ℕ) := Nat.cast_le.mpr hsum
+    _ = ∑ q ∈ S, (((N / (q * p ^ 2) + 1) : ℕ) : ℝ) := Nat.cast_sum _ _
+    _ ≤ ∑ q ∈ S, ((N : ℝ) / (q * (p : ℝ) ^ 2) + 1) :=
+        Finset.sum_le_sum hterm
+    _ = (N : ℝ) / p ^ 2 * (∑ q ∈ S, (1 : ℝ) / q) + S.card := by
+        rw [Finset.sum_add_distrib]
+        congr 1
+        · rw [Finset.mul_sum]
+          apply Finset.sum_congr rfl
+          intro q hq
+          have hqR : (0 : ℝ) < (q : ℝ) := by
+            have hqprime : q.Prime :=
+              Nat.prime_of_mem_primesLE (Finset.mem_filter.mp hq).1
+            exact_mod_cast hqprime.pos
+          rw [mul_comm (q : ℝ) ((p : ℝ) ^ 2), ← div_div, mul_one_div]
+        · rw [Finset.sum_const, nsmul_eq_mul, mul_one]
+    _ ≤ (N : ℝ) / p ^ 2 * (Real.log b - Real.log a) + b := by
+        apply add_le_add _ hcardS
+        apply mul_le_mul_of_nonneg_left _ (by positivity)
+        exact sum_primesLE_Ioc_inv_le ha
+
+/-- **Anatomy split**: every anti-sieve element is either `a`-smooth through
+its largest prime factor or has its largest prime factor in `(a, p − 1]`. -/
+theorem smoothCongruentOne_card_eq_lpf_split (N p a : ℕ) (hp : 2 ≤ p) :
+    (smoothCongruentOne N p).card =
+      (smoothCongruentOneLpfLe N p a).card +
+        (smoothCongruentOneLpfBand N p a (p - 1)).card := by
+  classical
+  have hU : smoothCongruentOne N p =
+      smoothCongruentOneLpfLe N p a ∪ smoothCongruentOneLpfBand N p a (p - 1) := by
+    ext s
+    simp only [smoothCongruentOneLpfLe, smoothCongruentOneLpfBand,
+      Finset.mem_union, Finset.mem_filter]
+    constructor
+    · intro hs
+      rcases le_or_lt (largestPrimeFactor s) a with h | h
+      · exact Or.inl ⟨hs, h⟩
+      · refine Or.inr ⟨hs, h, ?_⟩
+        have hlt := lpf_lt_of_mem_smoothCongruentOne hp hs
+        omega
+    · rintro (⟨hs, -⟩ | ⟨hs, -, -⟩) <;> exact hs
+  have hdis : Disjoint (smoothCongruentOneLpfLe N p a)
+      (smoothCongruentOneLpfBand N p a (p - 1)) := by
+    rw [Finset.disjoint_left]
+    intro s hs hs'
+    obtain ⟨-, h1⟩ := Finset.mem_filter.mp hs
+    obtain ⟨-, ⟨h2, -⟩⟩ := Finset.mem_filter.mp hs'
+    omega
+  rw [hU, Finset.card_union_of_disjoint hdis]
+
+/-- **Banded-anatomy bound on `T₁`** — the mid-band ingredient, splitting at
+a free parameter `a ≥ 1`:
+`|smoothCongruentOne N p| ≤ Ψ(N, a) + (N/p²)·log((p−1)/a) + p`.
+
+The first term counts anti-sieve elements with **no** prime factor in
+`(a, p)` — Rankin territory.  The second is the per-prime residue-class
+bound summed over the band primes; injecting the equidistribution
+hypothesis `smoothPartnerCount ≤ C·Ψ/p²` (see
+`smoothCongruentOne_card_le_of_partner_bound`) in place of the class count
+`N/(q p²)` is exactly the `p₀^{-2}`-saving step. -/
+theorem smoothCongruentOne_card_le_lpf_split_real (N p a : ℕ) (hp : 2 ≤ p)
+    (ha : 1 ≤ a) :
+    ((smoothCongruentOne N p).card : ℝ) ≤
+      smoothCount N a +
+        (N : ℝ) / (p : ℝ) ^ 2 * (Real.log (p - 1) - Real.log a) + p := by
+  have hsplit := smoothCongruentOne_card_eq_lpf_split N p a hp
+  have h1 : ((smoothCongruentOneLpfLe N p a).card : ℝ) ≤ smoothCount N a :=
+    Nat.cast_le.mpr (smoothCongruentOneLpfLe_card_le N p a)
+  have h2 := smoothCongruentOneLpfBand_card_le_real N p a (p - 1) hp ha
+  have hpm1 : ((p - 1 : ℕ) : ℝ) ≤ p := by
+    have : (p - 1 : ℕ) ≤ p := Nat.sub_le _ _
+    exact_mod_cast this
+  calc ((smoothCongruentOne N p).card : ℝ)
+      = ((smoothCongruentOneLpfLe N p a).card : ℝ) +
+          ((smoothCongruentOneLpfBand N p a (p - 1)).card : ℝ) := by
+        rw [← Nat.cast_add, hsplit]
+    _ ≤ smoothCount N a +
+          ((N : ℝ) / (p : ℝ) ^ 2 * (Real.log ((p - 1 : ℕ) : ℝ) - Real.log a)
+            + (p - 1 : ℕ)) := add_le_add h1 h2
+    _ ≤ smoothCount N a +
+          ((N : ℝ) / (p : ℝ) ^ 2 * (Real.log ((p - 1 : ℕ) : ℝ) - Real.log a)
+            + p) := by
+        apply add_le_add_left
+        apply add_le_add_left
+        exact_mod_cast Nat.sub_le p 1
+    _ = smoothCount N a +
+          (N : ℝ) / (p : ℝ) ^ 2 * (Real.log (p - 1) - Real.log a) + p := by
+        rw [Nat.cast_sub (show 1 ≤ p by omega), Nat.cast_one]
+        ring
+
+/-! ### Freeze-prime moments: prime pairs in a congruence class -/
+
+/-- **Congruent prime pairs** (the freeze-prime first moment): pairs of
+primes `(q₁, q₂)` with `q₁ ≤ P₁`, `q₂ ≤ P₂` and `q₁·q₂ ≡ a (mod p)`. -/
+def primePairCongFinset (P₁ P₂ p a : ℕ) : Finset (ℕ × ℕ) :=
+  ((Nat.primesLE P₁) ×ˢ (Nat.primesLE P₂)).filter fun ⟨q₁, q₂⟩ =>
+    q₁ * q₂ ≡ a [MOD p]
+
+theorem mem_primePairCongFinset {P₁ P₂ p a q₁ q₂ : ℕ} :
+    (q₁, q₂) ∈ primePairCongFinset P₁ P₂ p a ↔
+      q₁ ∈ Nat.primesLE P₁ ∧ q₂ ∈ Nat.primesLE P₂ ∧ q₁ * q₂ ≡ a [MOD p] := by
+  simp only [primePairCongFinset, Finset.mem_filter, Finset.mem_product]
+  tauto
+
+/-- **Fiber bound**: for each frozen `q₁`, the admissible `q₂`'s all lie in
+a single residue class `mod p` — hence at most `P₂/p + 1` of them.  This is
+the elementary core of Prop 6.7(i): freezing all but one prime coordinate
+exposes the `1/p` density. -/
+theorem primePairCong_fiber_card_le {P₁ P₂ p a q₁ : ℕ}
+    (hp : 0 < p) (ha : Nat.Coprime a p) :
+    ((primePairCongFinset P₁ P₂ p a).filter fun e => e.1 = q₁).card ≤
+      P₂ / p + 1 := by
+  classical
+  rcases ((primePairCongFinset P₁ P₂ p a).filter fun e => e.1 = q₁)
+      .eq_empty_or_nonempty with hempty | hne
+  · simp [hempty]
+  obtain ⟨⟨q₁', m₀⟩, he₀⟩ := hne
+  obtain ⟨hmem₀, hfst⟩ := Finset.mem_filter.mp he₀
+  obtain ⟨hprod₀, hcong₀⟩ := Finset.mem_filter.mp hmem₀
+  obtain ⟨hq₁₀, hm₀⟩ := Finset.mem_product.mp hprod₀
+  simp only at hfst
+  subst hfst
+  refine (Finset.card_le_card_of_injOn Prod.snd ?_ ?_).trans
+    (card_residue_class_le P₂ p m₀)
+  · intro e he
+    rw [Finset.mem_coe] at he ⊢
+    obtain ⟨hmeme, hfe⟩ := Finset.mem_filter.mp he
+    obtain ⟨hprode, hconge⟩ := Finset.mem_filter.mp hmeme
+    obtain ⟨hq₁e, hq₂e⟩ := Finset.mem_product.mp hprode
+    have hq₂prime := Nat.prime_of_mem_primesLE hq₂e
+    have hconge' : e.1 * e.2 ≡ a [MOD p] := hconge
+    have hconge'' : q₁ * e.2 ≡ a [MOD p] := hfe ▸ hconge'
+    have hcong : e.2 ≡ m₀ [MOD p] :=
+      modEq_of_mul_modEq_of_coprime hp hconge'' hcong₀ ha
+    refine Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨?_, ?_⟩, hcong⟩
+    · exact hq₂prime.one_le
+    · exact Nat.le_of_mem_primesLE hq₂e
+  · intro e₁ he₁ e₂ he₂ h
+    obtain ⟨-, hf₁⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp he₁)
+    obtain ⟨-, hf₂⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp he₂)
+    obtain ⟨a₁, b₁⟩ := e₁
+    obtain ⟨a₂, b₂⟩ := e₂
+    simp only at hf₁ hf₂ h
+    simp only [Prod.mk.injEq]
+    exact ⟨hf₁.trans hf₂.symm, h⟩
+
+/-- **Crude first moment** (Ta26c Prop 6.7(i) shape): for `a` coprime to
+`p`, the number of prime pairs `(q₁, q₂) ∈ [1, P₁]×[1, P₂]` with
+`q₁q₂ ≡ a (mod p)` is at most `π(P₁)·(P₂/p + 1)`.  Relative to the full
+box this is a `≪ 1/p` density once `p ≲ P₂`. -/
+theorem primePairCongFinset_card_le {P₁ P₂ p a : ℕ}
+    (hp : 0 < p) (ha : Nat.Coprime a p) :
+    (primePairCongFinset P₁ P₂ p a).card ≤
+      (Nat.primesLE P₁).card * (P₂ / p + 1) := by
+  classical
+  rw [Finset.card_eq_sum_card_fiberwise
+    (f := Prod.fst) (t := Nat.primesLE P₁)
+    (s := primePairCongFinset P₁ P₂ p a)]
+  · apply Finset.sum_le_sum
+    intro q₁ _
+    exact primePairCong_fiber_card_le hp ha
+  · intro e he
+    obtain ⟨hprod, -⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp he)
+    exact (Finset.mem_product.mp hprod).1
+
+/-- **Real form of the crude first moment**:
+`|primePairCongFinset| ≤ (P₁+1)·(P₂/p + 1)` in `ℝ`. -/
+theorem primePairCongFinset_card_le_real {P₁ P₂ p a : ℕ}
+    (hp : 0 < p) (ha : Nat.Coprime a p) :
+    ((primePairCongFinset P₁ P₂ p a).card : ℝ) ≤
+      ((P₁ : ℝ) + 1) * ((P₂ : ℝ) / p + 1) := by
+  have h := primePairCongFinset_card_le hp ha (P₁ := P₁) (P₂ := P₂)
+  have hcard : (Nat.primesLE P₁).card ≤ P₁ + 1 := card_primesLE_le P₁
+  have hcast : ((primePairCongFinset P₁ P₂ p a).card : ℝ) ≤
+      (((Nat.primesLE P₁).card * (P₂ / p + 1) : ℕ) : ℝ) := Nat.cast_le.mpr h
+  rw [Nat.cast_mul] at hcast
+  have h1 : (((Nat.primesLE P₁).card : ℕ) : ℝ) ≤ (P₁ : ℝ) + 1 := by
+    have : ((Nat.primesLE P₁).card : ℝ) ≤ ((P₁ + 1 : ℕ) : ℝ) :=
+      Nat.cast_le.mpr hcard
+    rwa [Nat.cast_add, Nat.cast_one] at this
+  have h2 : (((P₂ / p + 1 : ℕ) : ℝ)) ≤ (P₂ : ℝ) / p + 1 := by
+    push_cast
+    have : (((P₂ / p : ℕ) : ℝ)) ≤ (P₂ : ℝ) / p := Nat.cast_div_le
+    linarith [this]
+  calc ((primePairCongFinset P₁ P₂ p a).card : ℝ)
+      ≤ ((Nat.primesLE P₁).card : ℝ) * ((P₂ / p + 1 : ℕ) : ℝ) := hcast
+    _ ≤ ((P₁ : ℝ) + 1) * ((P₂ : ℝ) / p + 1) := by
+        apply mul_le_mul h1 h2 (by positivity) (by positivity)
+
+/-- **Congruent prime pairs, double congruence** (the freeze-prime second
+moment): `(q₁, q₂)` prime with `q₁ ≤ P₁`, `q₂ ≤ P₂`,
+`q₁q₂ ≡ a (mod p)` and `q₁q₂ ≡ a' (mod p')`. -/
+def primePairCong₂Finset (P₁ P₂ p p' a a' : ℕ) : Finset (ℕ × ℕ) :=
+  ((Nat.primesLE P₁) ×ˢ (Nat.primesLE P₂)).filter fun ⟨q₁, q₂⟩ =>
+    q₁ * q₂ ≡ a [MOD p] ∧ q₁ * q₂ ≡ a' [MOD p']
+
+/-- **Fiber bound, double congruence**: for each frozen `q₁`, the
+admissible `q₂`'s lie in a single class `mod p·p'` (by CRT), hence at most
+`P₂/(p·p') + 1` of them — the elementary core of Prop 6.8(i). -/
+theorem primePairCong₂_fiber_card_le {P₁ P₂ p p' a a' q₁ : ℕ}
+    (hp : 0 < p) (hp' : 0 < p') (hpp : Nat.Coprime p p')
+    (ha : Nat.Coprime a p) (ha' : Nat.Coprime a' p') :
+    ((primePairCong₂Finset P₁ P₂ p p' a a').filter fun e => e.1 = q₁).card ≤
+      P₂ / (p * p') + 1 := by
+  classical
+  rcases ((primePairCong₂Finset P₁ P₂ p p' a a').filter fun e => e.1 = q₁)
+      .eq_empty_or_nonempty with hempty | hne
+  · simp [hempty]
+  obtain ⟨⟨q₁', m₀⟩, he₀⟩ := hne
+  obtain ⟨hmem₀, hfst⟩ := Finset.mem_filter.mp he₀
+  obtain ⟨hprod₀, hcong₀⟩ := Finset.mem_filter.mp hmem₀
+  obtain ⟨hq₁₀, hm₀⟩ := Finset.mem_product.mp hprod₀
+  simp only at hfst
+  subst hfst
+  refine (Finset.card_le_card_of_injOn Prod.snd ?_ ?_).trans
+    (card_residue_class_le P₂ (p * p') m₀)
+  · intro e he
+    rw [Finset.mem_coe] at he ⊢
+    obtain ⟨hmeme, hfe⟩ := Finset.mem_filter.mp he
+    obtain ⟨hprode, hconge⟩ := Finset.mem_filter.mp hmeme
+    obtain ⟨hq₁e, hq₂e⟩ := Finset.mem_product.mp hprode
+    have hq₂prime := Nat.prime_of_mem_primesLE hq₂e
+    have hcong₁ : q₁ * e.2 ≡ a [MOD p] := hfe ▸ hconge.1
+    have hcong₂ : q₁ * e.2 ≡ a' [MOD p'] := hfe ▸ hconge.2
+    have hmod₁ : e.2 ≡ m₀ [MOD p] :=
+      modEq_of_mul_modEq_of_coprime hp hcong₁ hcong₀.1 ha
+    have hmod₂ : e.2 ≡ m₀ [MOD p'] :=
+      modEq_of_mul_modEq_of_coprime hp' hcong₂ hcong₀.2 ha'
+    have hmod : e.2 ≡ m₀ [MOD p * p'] :=
+      (Nat.modEq_and_modEq_iff_modEq_mul hpp).mpr ⟨hmod₁, hmod₂⟩
+    refine Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨?_, ?_⟩, hmod⟩
+    · exact hq₂prime.one_le
+    · exact Nat.le_of_mem_primesLE hq₂e
+  · intro e₁ he₁ e₂ he₂ h
+    obtain ⟨-, hf₁⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp he₁)
+    obtain ⟨-, hf₂⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp he₂)
+    obtain ⟨a₁, b₁⟩ := e₁
+    obtain ⟨a₂, b₂⟩ := e₂
+    simp only at hf₁ hf₂ h
+    simp only [Prod.mk.injEq]
+    exact ⟨hf₁.trans hf₂.symm, h⟩
+
+/-- **Crude second moment** (Ta26c Prop 6.8(i) shape): for `a` coprime to
+`p` and `a'` coprime to `p'`, with `p, p'` coprime, the number of prime
+pairs with `q₁q₂ ≡ a (mod p)` and `q₁q₂ ≡ a' (mod p')` is at most
+`π(P₁)·(P₂/(p·p') + 1)` — a `≪ 1/(p·p')` correlation bound. -/
+theorem primePairCong₂Finset_card_le {P₁ P₂ p p' a a' : ℕ}
+    (hp : 0 < p) (hp' : 0 < p') (hpp : Nat.Coprime p p')
+    (ha : Nat.Coprime a p) (ha' : Nat.Coprime a' p') :
+    (primePairCong₂Finset P₁ P₂ p p' a a').card ≤
+      (Nat.primesLE P₁).card * (P₂ / (p * p') + 1) := by
+  classical
+  rw [Finset.card_eq_sum_card_fiberwise
+    (f := Prod.fst) (t := Nat.primesLE P₁)
+    (s := primePairCong₂Finset P₁ P₂ p p' a a')]
+  · apply Finset.sum_le_sum
+    intro q₁ _
+    exact primePairCong₂_fiber_card_le hp hp' hpp ha ha'
+  · intro e he
+    obtain ⟨hprod, -⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp he)
+    exact (Finset.mem_product.mp hprod).1
+
+/-- **Real form of the crude second moment.** -/
+theorem primePairCong₂Finset_card_le_real {P₁ P₂ p p' a a' : ℕ}
+    (hp : 0 < p) (hp' : 0 < p') (hpp : Nat.Coprime p p')
+    (ha : Nat.Coprime a p) (ha' : Nat.Coprime a' p') :
+    ((primePairCong₂Finset P₁ P₂ p p' a a').card : ℝ) ≤
+      ((P₁ : ℝ) + 1) * ((P₂ : ℝ) / (p * p') + 1) := by
+  have h := primePairCong₂Finset_card_le hp hp' hpp ha ha'
+    (P₁ := P₁) (P₂ := P₂)
+  have hcard : (Nat.primesLE P₁).card ≤ P₁ + 1 := card_primesLE_le P₁
+  have hcast : ((primePairCong₂Finset P₁ P₂ p p' a a').card : ℝ) ≤
+      (((Nat.primesLE P₁).card * (P₂ / (p * p') + 1) : ℕ) : ℝ) :=
+    Nat.cast_le.mpr h
+  rw [Nat.cast_mul] at hcast
+  have h1 : (((Nat.primesLE P₁).card : ℕ) : ℝ) ≤ (P₁ : ℝ) + 1 := by
+    have : ((Nat.primesLE P₁).card : ℝ) ≤ ((P₁ + 1 : ℕ) : ℝ) :=
+      Nat.cast_le.mpr hcard
+    rwa [Nat.cast_add, Nat.cast_one] at this
+  have h2 : (((P₂ / (p * p') + 1 : ℕ) : ℝ)) ≤ (P₂ : ℝ) / (p * p') + 1 := by
+    push_cast
+    have : (((P₂ / (p * p') : ℕ) : ℝ)) ≤ (P₂ : ℝ) / (p * p') :=
+      Nat.cast_div_le
+    linarith [this]
+  calc ((primePairCong₂Finset P₁ P₂ p p' a a').card : ℝ)
+      ≤ ((Nat.primesLE P₁).card : ℝ) * ((P₂ / (p * p') + 1 : ℕ) : ℝ) := hcast
+    _ ≤ ((P₁ : ℝ) + 1) * ((P₂ : ℝ) / (p * p') + 1) := by
+        apply mul_le_mul h1 h2 (by positivity) (by positivity)
+
+/-! ### The conditional `p₀^{-2}` bound -/
+
+/-- **Conditional `p₀^{-2}` bound** (the missing input isolated as an
+explicit hypothesis).
+
+*Hypothesis* (`heq`): for every cofactor prime `q < p`, the `q`-smooth
+integers `m ≤ N/q` lying in the inverse class `q⁻¹ (mod p²)` number at
+most `C` times their expected share `Ψ(N/q, q)/p²`.  This is precisely
+the smooth-numbers-in-AP equidistribution input of Ta26c Props 6.6–6.8
+(level `p²` larger than the smoothness bound `q`), which has no known
+elementary proof.
+
+*Conclusion*: `T₁ = |smoothCongruentOne N p| ≤ (C/p²)·Σ_{q prime<p} Ψ(N/q, q)`.
+Everything else in the reduction — the cofactor anatomy, fiber uniqueness
+and the per-prime decomposition — is proved unconditionally above. -/
+theorem smoothCongruentOne_card_le_of_partner_bound (N p : ℕ) (hp : 2 ≤ p)
+    (C : ℝ)
+    (heq : ∀ q ∈ Nat.primesLE (p - 1),
+      (smoothPartnerCount (N / q) q (p ^ 2) q : ℝ) ≤
+        C * (smoothCount (N / q) q : ℝ) / (p : ℝ) ^ 2) :
+    ((smoothCongruentOne N p).card : ℝ) ≤
+      C / (p : ℝ) ^ 2 *
+        ∑ q ∈ Nat.primesLE (p - 1), (smoothCount (N / q) q : ℝ) := by
+  have hsum : (smoothCongruentOne N p).card ≤
+      ∑ q ∈ Nat.primesLE (p - 1), smoothPartnerCount (N / q) q (p ^ 2) q :=
+    smoothCongruentOne_card_le_sum_partner N p hp
+  calc ((smoothCongruentOne N p).card : ℝ)
+      ≤ ((∑ q ∈ Nat.primesLE (p - 1),
+          smoothPartnerCount (N / q) q (p ^ 2) q) : ℕ) := Nat.cast_le.mpr hsum
+    _ = ∑ q ∈ Nat.primesLE (p - 1),
+          ((smoothPartnerCount (N / q) q (p ^ 2) q : ℕ) : ℝ) :=
+        Nat.cast_sum _ _
+    _ ≤ ∑ q ∈ Nat.primesLE (p - 1),
+          C * (smoothCount (N / q) q : ℝ) / (p : ℝ) ^ 2 :=
+        Finset.sum_le_sum fun q hq => heq q hq
+    _ = C / (p : ℝ) ^ 2 *
+          ∑ q ∈ Nat.primesLE (p - 1), (smoothCount (N / q) q : ℝ) := by
+        rw [Finset.mul_sum]
+        apply Finset.sum_congr rfl
+        intro q _
+        rw [div_mul_eq_mul_div]
+
+/-- Monotonicity of `smoothCount` in the smoothness bound. -/
+theorem smoothCount_mono_y {N y₁ y₂ : ℕ} (h : y₁ ≤ y₂) :
+    smoothCount N y₁ ≤ smoothCount N y₂ := by
+  apply Finset.card_le_card
+  intro s hs
+  rw [Finset.mem_filter] at hs ⊢
+  obtain ⟨hsI, hlp⟩ := hs
+  exact ⟨hsI, hlp.trans h⟩
+
+/-- A crude consequence of the conditional bound: since
+`Ψ(N/q, q) ≤ Ψ(N, p−1)` and there are `≤ p` cofactor primes, the
+hypothesis yields `T₁ ≤ C·Ψ(N, p−1)/p` — already a `1/p` saving over the
+Rankin recovery bound `T₁ ≤ Ψ(N, p−1)`. -/
+theorem smoothCongruentOne_card_le_of_partner_bound_crude (N p : ℕ)
+    (hp : 2 ≤ p) (C : ℝ) (hC : 0 ≤ C)
+    (heq : ∀ q ∈ Nat.primesLE (p - 1),
+      (smoothPartnerCount (N / q) q (p ^ 2) q : ℝ) ≤
+        C * (smoothCount (N / q) q : ℝ) / (p : ℝ) ^ 2) :
+    ((smoothCongruentOne N p).card : ℝ) ≤
+      C * smoothCount N (p - 1) / p := by
+  have hmain := smoothCongruentOne_card_le_of_partner_bound N p hp C heq
+  have hterm : ∀ q ∈ Nat.primesLE (p - 1),
+      (smoothCount (N / q) q : ℝ) ≤ smoothCount N (p - 1) := by
+    intro q hq
+    have hqle : q ≤ p - 1 := (Nat.mem_primesLE.mp hq).1
+    have h1 : smoothCount (N / q) q ≤ smoothCount N q :=
+      smoothCount_mono (Nat.div_le_self _ _)
+    have h2 : smoothCount N q ≤ smoothCount N (p - 1) :=
+      smoothCount_mono_y hqle
+    exact_mod_cast h1.trans h2
+  have hsumle : ∑ q ∈ Nat.primesLE (p - 1), (smoothCount (N / q) q : ℝ) ≤
+      (Nat.primesLE (p - 1)).card * smoothCount N (p - 1) := by
+    calc ∑ q ∈ Nat.primesLE (p - 1), (smoothCount (N / q) q : ℝ)
+        ≤ ∑ q ∈ Nat.primesLE (p - 1), (smoothCount N (p - 1) : ℝ) :=
+          Finset.sum_le_sum hterm
+      _ = (Nat.primesLE (p - 1)).card * smoothCount N (p - 1) := by
+          rw [Finset.sum_const, nsmul_eq_mul]
+  have hcard : ((Nat.primesLE (p - 1)).card : ℝ) ≤ p := by
+    have h' : (Nat.primesLE (p - 1)).card ≤ p := by
+      have h := card_primesLE_le (p - 1)
+      omega
+    exact_mod_cast h'
+  have hNN : (0 : ℝ) ≤ smoothCount N (p - 1) := Nat.cast_nonneg _
+  calc ((smoothCongruentOne N p).card : ℝ)
+      ≤ C / (p : ℝ) ^ 2 *
+          ∑ q ∈ Nat.primesLE (p - 1), (smoothCount (N / q) q : ℝ) := hmain
+    _ ≤ C / (p : ℝ) ^ 2 *
+          ((Nat.primesLE (p - 1)).card * smoothCount N (p - 1)) := by
+        apply mul_le_mul_of_nonneg_left hsumle
+        apply div_nonneg hC (by positivity)
+    _ ≤ C / (p : ℝ) ^ 2 * (p * smoothCount N (p - 1)) := by
+        apply mul_le_mul_of_nonneg_left _ (by apply div_nonneg hC (by positivity))
+        exact mul_le_mul_of_nonneg_right hcard hNN
+    _ = C * smoothCount N (p - 1) / p := by
+        have hpR : (p : ℝ) ≠ 0 := by exact_mod_cast (by omega : 0 < p)
+        field_simp
+        ring
 
 end JSP314
