@@ -1,4 +1,4 @@
-import JSP314.Dominant
+import JSP314.ShortCount
 
 /-!
 # JSP-000314 — dominant-singleton refinement of the short-interval count
@@ -12,12 +12,9 @@ either `m` itself or strictly smoother than `m`, i.e.
 (all prime factors `< p`).  This file replaces the `2p + 1` factor by the
 count of `p`-smooth points of the window, plus the singleton `m` itself.
 
-**Note.**  This file imports `JSP314.Dominant` only and reproduces the
-`badSingletonsOfLpf` API of `JSP314.ShortCount` (same names and statements,
-proofs adjusted for this toolchain), because `JSP314.ShortCount` currently
-does not elaborate against Mathlib v4.34.0 (implicit-argument synthesis
-failures in `card_badSingletonsOfLpf_le` and
-`card_biUnion_Icc_badSingletonsOfLpf_le`).
+**Note.**  This file imports `JSP314.ShortCount` and reuses its
+`badSingletonsOfLpf` API (`badSingletonsOfLpf`, `mem_badSingletonsOfLpf`,
+`card_badSingletonsOfLpf_le`).
 
 ## Contents
 
@@ -50,59 +47,6 @@ This file is fully proved; no placeholders or unsafe shortcuts are used.
 namespace JSP314
 
 open Classical
-
-/-- The bad singletons `m ≤ B` whose largest prime factor equals `p`:
-`1 < m`, `P(m)² ∣ m` and `P(m) = p`. -/
-def badSingletonsOfLpf (B p : ℕ) : Finset ℕ :=
-  (Finset.range (B + 1)).filter
-    (fun m => 1 < m ∧ (largestPrimeFactor m) ^ 2 ∣ m ∧ largestPrimeFactor m = p)
-
-theorem mem_badSingletonsOfLpf {B p m : ℕ} :
-    m ∈ badSingletonsOfLpf B p ↔
-      m ≤ B ∧ 1 < m ∧ (largestPrimeFactor m) ^ 2 ∣ m ∧ largestPrimeFactor m = p := by
-  simp only [badSingletonsOfLpf, Finset.mem_filter, Finset.mem_range,
-    Nat.lt_add_one_iff]
-
-/-- **Count of bad singletons with a fixed largest prime factor**: every such
-`m ≤ B` is a multiple of `p²`, and `m ↦ m / p²` injects them into
-`[1, B / p²]`, so there are at most `B / p²` of them. -/
-theorem card_badSingletonsOfLpf_le (B p : ℕ) :
-    (badSingletonsOfLpf B p).card ≤ B / p ^ 2 := by
-  rcases Nat.eq_zero_or_pos p with rfl | hp0
-  · -- `p = 0`: no `m` has `largestPrimeFactor m = 0` (it is always `≥ 1`).
-    have hempty : badSingletonsOfLpf B 0 = ∅ := by
-      rw [Finset.eq_empty_iff_forall_notMem]
-      intro m hm
-      rw [mem_badSingletonsOfLpf] at hm
-      have hpos := largestPrimeFactor_pos m
-      omega
-    rw [hempty]
-    simp
-  · have hp2 : 0 < p ^ 2 := by
-      rw [pow_two]
-      exact Nat.mul_pos hp0 hp0
-    have hcard : (badSingletonsOfLpf B p).card ≤
-        (Finset.Icc 1 (B / p ^ 2)).card := by
-      refine Finset.card_le_card_of_injOn (fun m => m / p ^ 2) ?_ ?_
-      · -- MapsTo: `1 ≤ m / p² ≤ B / p²`.
-        intro m hm
-        rw [Finset.mem_coe, mem_badSingletonsOfLpf] at hm
-        obtain ⟨hmB, hm1, hmsq, hmeq⟩ := hm
-        have hdvd : p ^ 2 ∣ m := hmeq ▸ hmsq
-        refine Finset.mem_coe.mpr (Finset.mem_Icc.mpr ⟨?_, ?_⟩)
-        · exact Nat.div_pos (Nat.le_of_dvd (by omega) hdvd) hp2
-        · exact Nat.div_le_div_right hmB
-      · -- InjOn: `m` is determined by `m / p²` since `p² ∣ m`.
-        intro a ha b hb hab
-        rw [Finset.mem_coe, mem_badSingletonsOfLpf] at ha hb
-        have hdvd_a : p ^ 2 ∣ a := ha.2.2.2 ▸ ha.2.2.1
-        have hdvd_b : p ^ 2 ∣ b := hb.2.2.2 ▸ hb.2.2.1
-        have hab' : a / p ^ 2 = b / p ^ 2 := hab
-        calc a = a / p ^ 2 * p ^ 2 := (Nat.div_mul_cancel hdvd_a).symm
-          _ = b / p ^ 2 * p ^ 2 := by rw [hab']
-          _ = b := Nat.div_mul_cancel hdvd_b
-    rw [Nat.card_Icc, Nat.add_sub_cancel] at hcard
-    exact hcard
 
 /-- **Refined covering**: every point `n ≤ x` covered by a short bad interval
 lies in the window `[m − p, m + p]` of a bad singleton `m ≤ 2x` with

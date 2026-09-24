@@ -6,7 +6,7 @@ import Mathlib.Tactic
 /-!
 # JSP-000314 — the small-prime band `p ≤ log₂ x` of the near-pair sum
 
-Milestone toward `badNonSingleton_interval_bound` (the sole sorry in
+Milestone toward `badNonSingleton_interval_bound` (the sole placeholder in
 `Main.lean`).  The residual reduces (ShortResidual + FreshEye) to an
 eventual bound on
 

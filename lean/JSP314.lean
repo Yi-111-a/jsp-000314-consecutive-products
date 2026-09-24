@@ -7,6 +7,7 @@ import JSP314.Reach
 import JSP314.Squeeze2
 import JSP314.SmoothRunBound
 import JSP314.PrimeGap
+import JSP314.RunBands
 import JSP314.RunCount
 import JSP314.QuadRegime
 import JSP314.QuadMertens
