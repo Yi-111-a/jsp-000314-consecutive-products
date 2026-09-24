@@ -278,7 +278,7 @@ theorem bandLargeCount_eq_lo_add_hi (x : ℕ) :
   intro p _
   have hge : (Finset.Icc 1 (2 * p)).filter (fun k => runSplitH x ≤ k) =
       (Finset.Icc 1 (2 * p)).filter (fun k => ¬ k < runSplitH x) :=
-    Finset.filter_congr fun k _ => propext not_lt.symm
+    Finset.filter_congr fun k _ => not_lt.symm
   rw [hge]
   exact (Finset.sum_filter_add_sum_filter_not _ _ _).symm
 
@@ -297,7 +297,7 @@ theorem bandLargeLo_le_aux (x : ℕ) :
   have hpp : p.Prime := Nat.prime_of_mem_primesLE (Finset.mem_filter.mp hp).1
   have hcard :
       ((Finset.Icc 1 (2 * p)).filter (· < runSplitH x)).card ≤ runSplitH x := by
-    refine le_trans (Finset.card_le_card ?_) (Finset.card_range _)
+    refine le_trans (Finset.card_le_card ?_) (Finset.card_range _).le
     intro k hk
     rw [Finset.mem_filter] at hk
     rw [Finset.mem_range]
@@ -312,7 +312,8 @@ theorem bandLargeLo_le_aux (x : ℕ) :
         have h2 := leftRunCount_le_div x p k hpp
         omega
     _ = ((Finset.Icc 1 (2 * p)).filter (· < runSplitH x)).card *
-          (2 * (2 * x / p ^ 2)) := by rw [Finset.sum_const, nsmul_eq_mul]
+          (2 * (2 * x / p ^ 2)) := by
+        rw [Finset.sum_const, nsmul_eq_mul, Nat.cast_id]
     _ ≤ runSplitH x * (2 * (2 * x / p ^ 2)) :=
         Nat.mul_le_mul hcard le_rfl
 
@@ -362,7 +363,8 @@ theorem sum_one_div_sq_Ico_le {B : ℕ} (hB : 1 ≤ B) (N : ℕ) :
           field_simp
           ring]
         apply one_div_le_one_div_of_le (mul_pos ha0 ha1)
-        exact mul_le_mul (by linarith) le_rfl ha1.le ha1.le
+        rw [pow_two]
+        exact mul_le_mul_of_nonneg_right (by linarith) ha1.le
     _ = (1 : ℝ) / ((B + 0 : ℕ) : ℝ) -
           1 / ((B + (N + 1 - (B + 1)) : ℕ) : ℝ) :=
         Finset.sum_range_sub' _ _
@@ -478,7 +480,12 @@ theorem bandLarge_lo_le :
           apply mul_le_mul_of_nonneg_left _ (Nat.cast_nonneg _)
           apply Finset.sum_le_sum
           intro p _
-          exact mul_le_mul_of_nonneg_left Nat.cast_div_le (by norm_num)
+          have hcast : ((2 * x / p ^ 2 : ℕ) : ℝ) ≤
+              (2 * x : ℝ) / (p : ℝ) ^ 2 := by
+            calc ((2 * x / p ^ 2 : ℕ) : ℝ) ≤ ↑(2 * x) / ↑(p ^ 2) :=
+                Nat.cast_div_le
+              _ = (2 * x : ℝ) / (p : ℝ) ^ 2 := by push_cast
+          exact mul_le_mul_of_nonneg_left hcast (by norm_num)
       _ = _ := by rw [hsum]
   have hbound2 : (bandLargeLo x : ℝ) ≤
       4 * (runSplitH x : ℝ) * (x : ℝ) / (B : ℝ) := by
@@ -534,7 +541,7 @@ theorem bandLargeHi_le (x : ℕ) :
         exact Nat.add_le_add (rightRunCount_anti hkH) (leftRunCount_anti hkH)
     _ = ((Finset.Icc 1 (2 * p)).filter (fun k => runSplitH x ≤ k)).card *
           (rightRunCount x p (runSplitH x) + leftRunCount x p (runSplitH x)) := by
-        rw [Finset.sum_const, nsmul_eq_mul]
+        rw [Finset.sum_const, nsmul_eq_mul, Nat.cast_id]
     _ ≤ (2 * p) * (rightRunCount x p (runSplitH x) +
           leftRunCount x p (runSplitH x)) :=
         Nat.mul_le_mul hcard le_rfl
