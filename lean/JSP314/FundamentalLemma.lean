@@ -132,7 +132,7 @@ theorem brunNu_eq_sum_powerset {P t n : ℕ} (hP : Squarefree P) (hn : n ≠ 0) 
   have hP0 : P ≠ 0 := hP.ne_zero
   set g := n.gcd P with hg_def
   have hg0 : g ≠ 0 := gcd_ne_zero_right hP0
-  have hgsq : Squarefree g := Squarefree.squarefree_of_dvd (gcd_dvd_right n P) hP
+  have hgsq : Squarefree g := Squarefree.squarefree_of_dvd (Nat.gcd_dvd_right n P) hP
   have hset : (n.divisors.filter fun d => d ∣ P ∧ d.primeFactors.card ≤ 2 * t)
       = g.divisors.filter fun d => d.primeFactors.card ≤ 2 * t := by
     ext d
@@ -177,7 +177,7 @@ theorem brunNu_eq_sum_powerset {P t n : ℕ} (hP : Squarefree P) (hn : n ≠ 0) 
       Squarefree.squarefree_of_dvd (Nat.mem_divisors.mp hd.1).1 hgsq
     have hμ : (μ d : ℤ) = (-1) ^ d.primeFactors.card := by
       conv_lhs => rw [← Nat.prod_primeFactors_of_squarefree hdsq]
-      exact moebius_prod_primeFactors (P := d) Finset.subset_rfl
+      exact moebius_prod_primeFactors (P := d) subset_rfl
     exact hμ
 
 /-- **Closed form of `ν`**: with `ω = #(primeFactors (gcd n P))`,
@@ -194,7 +194,7 @@ theorem brunNu_eq_alternating {P t n : ℕ} (hP : Squarefree P) (hn : n ≠ 0) :
           (-1 : ℤ) ^ s.card
       = ∑ s ∈ (n.gcd P).primeFactors.powerset,
           (if s.card ≤ 2 * t then (-1 : ℤ) ^ s.card else 0) :=
-        (Finset.sum_filter _ _ _).symm
+        Finset.sum_filter _ _
     _ = ∑ j ∈ Finset.range (ω + 1),
           (ω.choose j : ℤ) • (if j ≤ 2 * t then (-1 : ℤ) ^ j else 0) := key
     _ = ∑ j ∈ Finset.range (2 * t + 1),
@@ -204,9 +204,9 @@ theorem brunNu_eq_alternating {P t n : ℕ} (hP : Squarefree P) (hn : n ≠ 0) :
             = if j ≤ 2 * t then (-1 : ℤ) ^ j * (ω.choose j : ℤ) else 0 := by
           intro j
           by_cases hj : j ≤ 2 * t
-          · simp only [hj, if_true, nsmul_eq_mul]
-            rw [mul_comm]
-          · simp only [hj, if_false, smul_zero]
+          · simp only [hj, ite_true]
+            rw [smul_eq_mul, mul_comm]
+          · simp only [hj, ite_false, smul_zero]
         rw [Finset.sum_congr rfl fun j _ => hterm j, ← Finset.sum_filter]
         have hflt : (Finset.range (ω + 1)).filter (fun j => j ≤ 2 * t)
             = Finset.range (min ω (2 * t) + 1) := by
@@ -301,7 +301,7 @@ theorem brun_isUpperMoebius {P : ℕ} (hP : Squarefree P) (t : ℕ) :
       rw [hnu1]
       norm_num
     · rw [if_neg h1]
-      exact Int.cast_nonneg.mpr (brunNu_nonneg hP hn)
+      exact Int.cast_nonneg (brunNu_nonneg hP hn)
 
 /-! ### The main term `∑_{d ∣ P} λ_d / d` -/
 
@@ -348,9 +348,10 @@ theorem brun_sum_moebius_div {P : ℕ} (hP : Squarefree P) :
         Squarefree.squarefree_of_dvd (Nat.dvd_of_mem_divisors hd) hP
       have hμ : (μ d : ℤ) = (-1) ^ d.primeFactors.card := by
         conv_lhs => rw [← Nat.prod_primeFactors_of_squarefree hdsq]
-        exact moebius_prod_primeFactors (P := d) Finset.subset_rfl
+        exact moebius_prod_primeFactors (P := d) subset_rfl
       have hd' : (d : ℚ) = ∏ q ∈ d.primeFactors, (q : ℚ) := by
-        rw [← Nat.prod_primeFactors_of_squarefree hdsq, Nat.cast_prod]
+        conv_lhs => rw [← Nat.prod_primeFactors_of_squarefree hdsq]
+        rw [Nat.cast_prod]
       have hμ' : (μ d : ℚ) = (-1 : ℚ) ^ d.primeFactors.card := by
         exact_mod_cast hμ
       rw [div_eq_mul_inv, hd', Finset.prod_inv_distrib, hμ']
@@ -399,9 +400,10 @@ theorem brun_sum_lambda_div {P t : ℕ} (hP : Squarefree P) :
       (Nat.mem_divisors.mp (Finset.mem_filter.mp hd).1).1 hP
     have hμ : (μ d : ℤ) = (-1) ^ d.primeFactors.card := by
       conv_lhs => rw [← Nat.prod_primeFactors_of_squarefree hdsq]
-      exact moebius_prod_primeFactors (P := d) Finset.subset_rfl
+      exact moebius_prod_primeFactors (P := d) subset_rfl
     have hd' : (d : ℚ) = ∏ q ∈ d.primeFactors, (q : ℚ) := by
-      rw [← Nat.prod_primeFactors_of_squarefree hdsq, Nat.cast_prod]
+      conv_lhs => rw [← Nat.prod_primeFactors_of_squarefree hdsq]
+      rw [Nat.cast_prod]
     have hμ' : (μ d : ℚ) = (-1 : ℚ) ^ d.primeFactors.card := by
       exact_mod_cast hμ
     rw [div_eq_mul_inv, hd', Finset.prod_inv_distrib, hμ']
