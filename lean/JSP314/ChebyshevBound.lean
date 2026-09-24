@@ -427,7 +427,6 @@ lemma chebC_prime_dvd {n p : ℕ} (hp : p.Prime) (hlo : n / 6 < p) (hhi : p ≤ 
         show n / 2 / p ^ i + n / 3 / p ^ i + n / 6 / p ^ i ≤ n / p ^ i
         rw [cheb_div_div_pow_comm, cheb_div_div_pow_comm, cheb_div_div_pow_comm]
         exact cheb_floor_le _)]
-  dsimp only
   rw [cheb_div_div_pow_comm, cheb_div_div_pow_comm, cheb_div_div_pow_comm]
   refine le_trans ?_ (Finset.single_le_sum (f := fun i ↦ n / p ^ i -
     ((n / p ^ i) / 2 + (n / p ^ i) / 3 + (n / p ^ i) / 6)) (fun i _ ↦ Nat.zero_le _)
