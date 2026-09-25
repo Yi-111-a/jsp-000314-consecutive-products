@@ -1,4 +1,5 @@
 import JSP314.ShortLong
+import JSP314.AntiSieveCore
 import Mathlib.Tactic
 
 /-!
@@ -9,18 +10,11 @@ Ta26c formalization.  Everything is elementary; no sorries.
 
 ## Import note
 
-`JSP314.AntiSieve` (which defines `smoothFinset`/`smoothCount` and proves
-`largestPrimeFactor_le_of_dvd` and `smoothCount_mono`) is currently **broken
-upstream** — it fails to compile at lines 869+ (`Icc_eq_empty`, several
-`omega`/`rw` failures, `Unknown identifier q₁`).  Since this file must compile
-standalone, the handful of needed declarations are reproduced here *verbatim*
-(same names, same statements, same proofs) from `AntiSieve.lean`:
-
-* `smoothFinset`, `smoothCount`, `smoothCount_mono` (AntiSieve.lean:91–195)
-* `largestPrimeFactor_le_of_dvd` (AntiSieve.lean:145–154)
-
-Once `AntiSieve.lean` is repaired, this file can switch to
-`import JSP314.AntiSieve` and the copies below can be deleted.
+`smoothFinset`/`smoothCount`, `largestPrimeFactor_le_of_dvd` and
+`smoothCount_mono` are imported from `JSP314.AntiSieveCore` (the repaired
+standalone copy of the `AntiSieve` core block).  Previously this file carried
+verbatim local copies; they were removed to avoid the duplicate-declaration
+clash now that both modules are in the umbrella.
 
 ## Main results
 
@@ -36,41 +30,6 @@ Once `AntiSieve.lean` is repaired, this file can switch to
 namespace JSP314
 
 open Finset
-
-/-! ### Local copies from `AntiSieve.lean` (see import note above) -/
-
-/-- **Ψ-type finset**: `s ∈ [1, N]` with `largestPrimeFactor s ≤ y`.
-(Identical to `AntiSieve.smoothFinset`.) -/
-def smoothFinset (N y : ℕ) : Finset ℕ :=
-  (Finset.Icc 1 N).filter fun s => largestPrimeFactor s ≤ y
-
-/-- `smoothCount N y = Ψ(N, y)`: the number of `y`-smooth integers in `[1, N]`.
-(Identical to `AntiSieve.smoothCount`.) -/
-noncomputable def smoothCount (N y : ℕ) : ℕ := (smoothFinset N y).card
-
-/-- Monotonicity of `largestPrimeFactor` under divisibility.
-(Identical to `AntiSieve.largestPrimeFactor_le_of_dvd`.) -/
-theorem largestPrimeFactor_le_of_dvd {m s : ℕ} (h : m ∣ s) (hs : 2 ≤ s) :
-    largestPrimeFactor m ≤ largestPrimeFactor s := by
-  rcases Nat.lt_or_ge m 2 with hm | hm
-  · rw [largestPrimeFactor_eq_one_iff.mpr (by omega : m ≤ 1)]
-    exact (one_lt_largestPrimeFactor hs).le
-  · rw [largestPrimeFactor_eq_maxPrimeFac hm,
-        largestPrimeFactor_eq_maxPrimeFac hs,
-        Nat.maxPrimeFac_le_iff (by omega : 1 < m)]
-    intro r hrp hrd
-    exact Nat.le_maxPrimeFac (by omega : s ≠ 0) hrp (hrd.trans h)
-
-/-- Monotonicity of `smoothCount` in the ambient bound.
-(Identical to `AntiSieve.smoothCount_mono`.) -/
-theorem smoothCount_mono {N₁ N₂ y : ℕ} (h : N₁ ≤ N₂) :
-    smoothCount N₁ y ≤ smoothCount N₂ y := by
-  apply Finset.card_le_card
-  intro s hs
-  simp only [smoothFinset, Finset.mem_filter] at hs ⊢
-  obtain ⟨hsI, hlp⟩ := hs
-  obtain ⟨hs1, hsN⟩ := Finset.mem_Icc.mp hsI
-  exact ⟨Finset.mem_Icc.mpr ⟨hs1, hsN.trans h⟩, hlp⟩
 
 /-! ### The peeling lemma -/
 

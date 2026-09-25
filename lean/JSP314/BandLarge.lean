@@ -14,7 +14,7 @@ split at `H₀ = ⌈x^{1/5}⌉`:
   `≤ H₀ · 4x · ∑_{p > (2x)^{1/4}} p⁻² ≲ 16·x^{19/20}`
   (`bandLarge_lo_le`, an unconditional eventually bound);
 * `k ≥ H₀` (`bandLargeHi`): monotonicity `T_k ≤ T_{H₀}`
-  (`rightRunCount_anti`, `leftRunCount_anti`) reduces the sum to
+  (`rightRunCount_anti'`, `leftRunCount_anti'`) reduces the sum to
   `2p·T_{H₀}` (`bandLargeHi_le`); the required smooth-run rarity bound is
   supplied as a hypothesis in `bandLargeCount_le_of_hi_le` and
   `bandLargeCount_le_of_run_bound`.
@@ -43,7 +43,7 @@ theorem two_le_of_largestPrimeFactor_eq_prime {p m : ℕ} (hp : p.Prime)
 
 /-! ## Monotonicity in the run length -/
 
-theorem rightRunWitness_anti {x p k l : ℕ} (h : l ≤ k) :
+theorem rightRunWitness_anti' {x p k l : ℕ} (h : l ≤ k) :
     rightRunWitness x p k ⊆ rightRunWitness x p l := by
   intro m hm
   rw [mem_rightRunWitness] at hm ⊢
@@ -56,11 +56,11 @@ theorem rightRunWitness_anti {x p k l : ℕ} (h : l ≤ k) :
 
 /-- A run of `k` consecutive `p`-smooth numbers contains its first `l`
 for `l ≤ k`: `rightRunCount` is antitone in `k`. -/
-theorem rightRunCount_anti {x p k l : ℕ} (h : l ≤ k) :
+theorem rightRunCount_anti' {x p k l : ℕ} (h : l ≤ k) :
     rightRunCount x p k ≤ rightRunCount x p l :=
-  Finset.card_le_card (rightRunWitness_anti h)
+  Finset.card_le_card (rightRunWitness_anti' h)
 
-theorem leftRunWitness_anti {x p k l : ℕ} (h : l ≤ k) :
+theorem leftRunWitness_anti' {x p k l : ℕ} (h : l ≤ k) :
     leftRunWitness x p k ⊆ leftRunWitness x p l := by
   intro m hm
   rw [mem_leftRunWitness] at hm ⊢
@@ -73,9 +73,9 @@ theorem leftRunWitness_anti {x p k l : ℕ} (h : l ≤ k) :
   omega
 
 /-- `leftRunCount` is antitone in `k`. -/
-theorem leftRunCount_anti {x p k l : ℕ} (h : l ≤ k) :
+theorem leftRunCount_anti' {x p k l : ℕ} (h : l ≤ k) :
     leftRunCount x p k ≤ leftRunCount x p l :=
-  Finset.card_le_card (leftRunWitness_anti h)
+  Finset.card_le_card (leftRunWitness_anti' h)
 
 /-! ## Bertrand cutoff: `T_k = 0` when a prime lies in `(p, k]` -/
 
@@ -538,7 +538,7 @@ theorem bandLargeHi_le (x : ℕ) :
         apply Finset.sum_le_sum
         intro k hk
         have hkH : runSplitH x ≤ k := (Finset.mem_filter.mp hk).2
-        exact Nat.add_le_add (rightRunCount_anti hkH) (leftRunCount_anti hkH)
+        exact Nat.add_le_add (rightRunCount_anti' hkH) (leftRunCount_anti' hkH)
     _ = ((Finset.Icc 1 (2 * p)).filter (fun k => runSplitH x ≤ k)).card *
           (rightRunCount x p (runSplitH x) + leftRunCount x p (runSplitH x)) := by
         rw [Finset.sum_const, nsmul_eq_mul, Nat.cast_id]

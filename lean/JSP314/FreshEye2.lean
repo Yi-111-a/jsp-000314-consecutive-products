@@ -134,7 +134,7 @@ theorem leftRunCount_anti {x p k l : ℕ} (hkl : k ≤ l) :
 
 /-- **The `k`-sum collapses to the diagonal**: `Σ_{k=1}^{2p} T_k ≤ 2p·T₁`,
 since `T_k ≤ T_1` by antitonicity. -/
-theorem sum_Icc_rightRunCount_le (x p : ℕ) :
+theorem sum_Icc_rightRunCount_le' (x p : ℕ) :
     ∑ k ∈ Finset.Icc 1 (2 * p), rightRunCount x p k ≤
       (2 * p) * rightRunCount x p 1 := by
   calc ∑ k ∈ Finset.Icc 1 (2 * p), rightRunCount x p k
@@ -146,7 +146,7 @@ theorem sum_Icc_rightRunCount_le (x p : ℕ) :
     _ = (2 * p) * rightRunCount x p 1 := by
         rw [Nat.card_Icc, Nat.add_sub_cancel]
 
-theorem sum_Icc_leftRunCount_le (x p : ℕ) :
+theorem sum_Icc_leftRunCount_le' (x p : ℕ) :
     ∑ k ∈ Finset.Icc 1 (2 * p), leftRunCount x p k ≤
       (2 * p) * leftRunCount x p 1 := by
   calc ∑ k ∈ Finset.Icc 1 (2 * p), leftRunCount x p k
@@ -172,8 +172,8 @@ theorem runCountSum_le_diagonal (x : ℕ) :
   calc ∑ k ∈ Finset.Icc 1 (2 * p), rightRunCount x p k +
         ∑ k ∈ Finset.Icc 1 (2 * p), leftRunCount x p k
       ≤ 2 * p * rightRunCount x p 1 + 2 * p * leftRunCount x p 1 :=
-        add_le_add (sum_Icc_rightRunCount_le x p)
-          (sum_Icc_leftRunCount_le x p)
+        add_le_add (sum_Icc_rightRunCount_le' x p)
+          (sum_Icc_leftRunCount_le' x p)
     _ = 2 * p * (rightRunCount x p 1 + leftRunCount x p 1) := by ring
 
 end RunMonotonicity

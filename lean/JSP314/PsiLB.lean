@@ -5,19 +5,19 @@ import Mathlib.Tactic
 /-!
 # JSP-000314 — elementary lower bounds for smooth-number counts
 
-`smoothCount Y y` counts the `y`-smooth integers in `[1, Y]` (those `m` all of
+`psiLBCount Y y` counts the `y`-smooth integers in `[1, Y]` (those `m` all of
 whose prime factors are `≤ y`).  This file is the lower-bound counterpart of
 the Rankin-trick upper bound in `SieveBase`.
 
 ## Main results
 
-* `smoothCount_ge_choose`: if `y^u ≤ Y` then
-  `smoothCount Y y ≥ C(π(y), u)`, by counting products `∏ T` of `u` distinct
+* `psiLBCount_ge_choose`: if `y^u ≤ Y` then
+  `psiLBCount Y y ≥ C(π(y), u)`, by counting products `∏ T` of `u` distinct
   primes `≤ y`.  Injectivity: `Nat.primeFactors (∏ T) = T`
   (`SingletonLBz.primeFactors_prod_of_prime`).
 
-* `smoothCount_ge_min_mul_choose`: the sharper two-band estimate
-  `min (Y / y^u) (y / 2) · C(Δ(y/2), u) ≤ smoothCount Y y`, counting
+* `psiLBCount_ge_min_mul_choose`: the sharper two-band estimate
+  `min (Y / y^u) (y / 2) · C(Δ(y/2), u) ≤ psiLBCount Y y`, counting
   `r · ∏ T` with `r ≤ min (Y / y^u) (y / 2)` (every `r ≤ y/2` is automatically
   `y`-smooth and all its prime factors lie below every element of
   `T ⊆ (y/2, y]`).  Injectivity: `T` is recovered as the set of prime factors
@@ -25,17 +25,17 @@ the Rankin-trick upper bound in `SieveBase`.
   `Y / y^u ∈ [1, y)` coming from `u = ⌊log Y / log y⌋`, so the `u·log u` term
   is *not* doubled.
 
-* `smoothCount_ge_min_mul_div_pow`: real-valued corollary via
+* `psiLBCount_ge_min_mul_div_pow`: real-valued corollary via
   `SingletonLBz.choose_ge_quarter`:
-  `min (Y / y^u) (y / 2) · (Δ(y/2) / (2u))^u ≤ smoothCount Y y`.
+  `min (Y / y^u) (y / 2) · (Δ(y/2) / (2u))^u ≤ psiLBCount Y y`.
 
-* `smoothCount_eventually_ge_exp`: for `y` large and all `Y`, with
+* `psiLBCount_eventually_ge_exp`: for `y` large and all `Y`, with
   `u = ⌊log Y / log y⌋₊`,
-  `Y · exp(-u·(log u + log log y) - 7u) ≤ smoothCount Y y`.
+  `Y · exp(-u·(log u + log log y) - 7u) ≤ psiLBCount Y y`.
   Since `log u ≤ log log y + O(1)` in the regime `u ≍ log Y / log y`, this is
   `Y·exp(-(1+o(1))·u·log u)`, the correct order for `Ψ(Y, y)`.
 
-* `eventually_smoothCount_ge_exp`: the same bound packaged as
+* `eventually_psiLBCount_ge_exp`: the same bound packaged as
   `∀ᶠ p : ℕ × ℕ in Filter.atTop`.
 -/
 
@@ -49,18 +49,18 @@ open scoped Topology
 
 /-- The number of `y`-smooth integers in `[1, Y]`, i.e. those `m ∈ [1, Y]`
 all of whose prime factors are `≤ y`. -/
-def smoothCount (Y y : ℕ) : ℕ :=
+def psiLBCount (Y y : ℕ) : ℕ :=
   ((Finset.Icc 1 Y).filter fun m => ∀ p ∈ Nat.primeFactors m, p ≤ y).card
 
 /-- `1` is `y`-smooth, so the count is positive for `Y ≥ 1`. -/
-theorem one_le_smoothCount {Y y : ℕ} (hY : 1 ≤ Y) : 1 ≤ smoothCount Y y := by
+theorem one_le_psiLBCount {Y y : ℕ} (hY : 1 ≤ Y) : 1 ≤ psiLBCount Y y := by
   apply Finset.card_pos.mpr
   exact ⟨1, Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨le_refl 1, hY⟩,
     fun p hp => by simp only [Nat.primeFactors_one, Finset.notMem_empty] at hp⟩⟩
 
 /-- If `Y ≤ y`, every `m ∈ [1, Y]` is `y`-smooth. -/
-theorem smoothCount_eq_self {Y y : ℕ} (h : Y ≤ y) : smoothCount Y y = Y := by
-  unfold smoothCount
+theorem psiLBCount_eq_self {Y y : ℕ} (h : Y ≤ y) : psiLBCount Y y = Y := by
+  unfold psiLBCount
   rw [show (Finset.Icc 1 Y).filter (fun m => ∀ p ∈ Nat.primeFactors m, p ≤ y)
       = Finset.Icc 1 Y from ?_]
   · rw [Nat.card_Icc]; omega
@@ -70,11 +70,11 @@ theorem smoothCount_eq_self {Y y : ℕ} (h : Y ≤ y) : smoothCount Y y = Y := b
   rw [Nat.mem_primeFactors] at hp
   exact (Nat.le_of_dvd hm.1 hp.2.1).trans (hm.2.trans h)
 
-/-- **Distinct-primes count.** If `y^u ≤ Y` then `smoothCount Y y ≥ C(π(y), u)`:
+/-- **Distinct-primes count.** If `y^u ≤ Y` then `psiLBCount Y y ≥ C(π(y), u)`:
 map a `u`-element set `T` of primes `≤ y` to `∏ T`; the product is `≤ y^u ≤ Y`,
 is `y`-smooth, and `T` is recovered as `Nat.primeFactors (∏ T)`. -/
-theorem smoothCount_ge_choose {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u ≤ Y) :
-    (Nat.primesLE y).card.choose u ≤ smoothCount Y y := by
+theorem psiLBCount_ge_choose {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u ≤ Y) :
+    (Nat.primesLE y).card.choose u ≤ psiLBCount Y y := by
   classical
   have hsub : ((Nat.primesLE y).powersetCard u).image (fun T => T.prod id) ⊆
       (Finset.Icc 1 Y).filter (fun m => ∀ p ∈ Nat.primeFactors m, p ≤ y) := by
@@ -109,16 +109,16 @@ theorem smoothCount_ge_choose {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u ≤ Y) :
   calc (Nat.primesLE y).card.choose u
         = (((Nat.primesLE y).powersetCard u).image fun T => T.prod id).card := by
           rw [Finset.card_image_of_injOn hinj, Finset.card_powersetCard]
-    _ ≤ smoothCount Y y := Finset.card_le_card hsub
+    _ ≤ psiLBCount Y y := Finset.card_le_card hsub
 
 /-- **Two-band count.**  Count `r · ∏ T` where `r ∈ [1, w]` with
 `w = min (Y / y^u) (y / 2)` and `T` is a `u`-subset of the dyadic primes in
 `(y/2, y]`.  Every prime factor of `r` is `≤ w ≤ y/2`, hence below every
 element of `T`; the map is injective since `T` is recovered as the prime
 factors of the product that exceed `y/2`. -/
-theorem smoothCount_ge_min_mul_choose {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u ≤ Y) :
+theorem psiLBCount_ge_min_mul_choose {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u ≤ Y) :
     min (Y / y ^ u) (y / 2) * ((SmoothLB.dyadicPrimes (y / 2)).card.choose u)
-      ≤ smoothCount Y y := by
+      ≤ psiLBCount Y y := by
   classical
   set w := min (Y / y ^ u) (y / 2) with hwdef
   set D := SmoothLB.dyadicPrimes (y / 2) with hDdef
@@ -208,17 +208,17 @@ theorem smoothCount_ge_min_mul_choose {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u �
       Nat.add_sub_cancel w 1]
   calc w * (D.card.choose u) = S.card := hcard.symm
     _ = (S.image f).card := (Finset.card_image_of_injOn hinj).symm
-    _ ≤ smoothCount Y y := Finset.card_le_card hsub
+    _ ≤ psiLBCount Y y := Finset.card_le_card hsub
 
 /-- **Real-valued corollary.**  With `w = min (Y / y^u) (y / 2)` and
 `D' = #(dyadicPrimes (y/2))`, if `2u ≤ D'` then
-`w · (D' / (2u))^u ≤ smoothCount Y y`. -/
-theorem smoothCount_ge_min_mul_div_pow {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u ≤ Y)
+`w · (D' / (2u))^u ≤ psiLBCount Y y`. -/
+theorem psiLBCount_ge_min_mul_div_pow {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u ≤ Y)
     (h2u : 2 * u ≤ (SmoothLB.dyadicPrimes (y / 2)).card) :
     ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ) *
       (((SmoothLB.dyadicPrimes (y / 2)).card : ℝ) / (2 * u)) ^ u
-        ≤ (smoothCount Y y : ℝ) := by
-  have h := smoothCount_ge_min_mul_choose hY hu
+        ≤ (psiLBCount Y y : ℝ) := by
+  have h := psiLBCount_ge_min_mul_choose hY hu
   have hc := SingletonLBz.choose_ge_quarter
     (D := (SmoothLB.dyadicPrimes (y / 2)).card) (u := u) h2u
   have heq : (((SmoothLB.dyadicPrimes (y / 2)).card : ℝ) / (2 * u)) ^ u
@@ -235,7 +235,7 @@ theorem smoothCount_ge_min_mul_div_pow {Y y u : ℕ} (hY : 1 ≤ Y) (hu : y ^ u 
     _ = ((min (Y / y ^ u) (y / 2) *
           (SmoothLB.dyadicPrimes (y / 2)).card.choose u : ℕ) : ℝ) := by
         rw [Nat.cast_mul]
-    _ ≤ (smoothCount Y y : ℝ) := by exact_mod_cast h
+    _ ≤ (psiLBCount Y y : ℝ) := by exact_mod_cast h
 
 /-- `y ↦ y / 2` tends to `∞`. -/
 theorem tendsto_nat_div_two_atTop :
@@ -271,7 +271,7 @@ theorem eventually_dyadicPrimes_half_card_ge : ∀ᶠ y : ℕ in Filter.atTop,
     _ ≤ _ := hy
 
 /-- `(log y)² ≤ y / 64` eventually (from `log = o(·^{1/2})`). -/
-theorem eventually_log_sq_le : ∀ᶠ y : ℕ in Filter.atTop,
+theorem eventually_log_sq_le' : ∀ᶠ y : ℕ in Filter.atTop,
     (Real.log (y : ℝ)) ^ 2 ≤ (y : ℝ) / 64 := by
   have h := (isLittleO_log_rpow_atTop (show (0 : ℝ) < 1 / 2 by norm_num)).comp_tendsto
     tendsto_natCast_atTop_atTop
@@ -293,17 +293,17 @@ theorem eventually_log_sq_le : ∀ᶠ y : ℕ in Filter.atTop,
 set_option maxHeartbeats 800000 in
 /-- **Asymptotic lower bound.**  For `y` large and every `Y`, with
 `u = ⌊log Y / log y⌋₊`,
-`Y · exp(-u·(log u + log log y) - 7u) ≤ smoothCount Y y`. -/
-theorem smoothCount_eventually_ge_exp :
+`Y · exp(-u·(log u + log log y) - 7u) ≤ psiLBCount Y y`. -/
+theorem psiLBCount_eventually_ge_exp :
     ∃ B : ℕ, ∀ Y y : ℕ, B ≤ y →
       (Y : ℝ) * Real.exp
           (-(⌊Real.log (Y : ℝ) / Real.log (y : ℝ)⌋₊ : ℝ) *
             (Real.log (⌊Real.log (Y : ℝ) / Real.log (y : ℝ)⌋₊ : ℝ) +
               Real.log (Real.log (y : ℝ))) -
             7 * (⌊Real.log (Y : ℝ) / Real.log (y : ℝ)⌋₊ : ℝ))
-        ≤ (smoothCount Y y : ℝ) := by
+        ≤ (psiLBCount Y y : ℝ) := by
   obtain ⟨B1, hB1⟩ := eventually_atTop.mp eventually_dyadicPrimes_half_card_ge
-  obtain ⟨B2, hB2⟩ := eventually_atTop.mp eventually_log_sq_le
+  obtain ⟨B2, hB2⟩ := eventually_atTop.mp eventually_log_sq_le'
   refine ⟨max (max B1 B2) 4, fun Y y hBy => ?_⟩
   have hB1y := hB1 y ((le_max_left B1 B2).trans ((le_max_left _ 4).trans hBy))
   have hB2y := hB2 y ((le_max_right B1 B2).trans ((le_max_left _ 4).trans hBy))
@@ -332,7 +332,7 @@ theorem smoothCount_eventually_ge_exp :
   have hlog2 : Real.log 2 < (0.7 : ℝ) := by linarith [Real.log_two_lt_d9]
   rcases le_or_gt Y y with hYy | hYy
   · -- `Y ≤ y`: every `m ≤ Y` is `y`-smooth, and the bound is `≤ Y`.
-    rw [smoothCount_eq_self hYy]
+    rw [psiLBCount_eq_self hYy]
     have hlogu : 0 ≤ Real.log (u : ℝ) := by
       rcases Nat.eq_zero_or_pos u with h0 | hpos
       · rw [h0]; simp
@@ -389,7 +389,7 @@ theorem smoothCount_eventually_ge_exp :
         rw [hD'def]
         exact h1.trans_le hB1y
       have h2upos : (0 : ℝ) < 2 * (u : ℝ) := mul_pos two_pos hurpos
-      have h3 := smoothCount_ge_min_mul_div_pow hY1 hYu h2u
+      have h3 := psiLBCount_ge_min_mul_div_pow hY1 hYu h2u
       have hbase : (y : ℝ) / (64 * (u : ℝ) * Real.log (y : ℝ)) ≤ D' / (2 * (u : ℝ)) := by
         have e : (y : ℝ) / (64 * (u : ℝ) * Real.log (y : ℝ))
             = ((y : ℝ) / (32 * Real.log (y : ℝ))) / (2 * (u : ℝ)) := by
@@ -417,11 +417,11 @@ theorem smoothCount_eventually_ge_exp :
           = Real.log ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ)
             + (u : ℝ) * Real.log (D' / (2 * (u : ℝ))) := by
         rw [Real.log_mul hwpos.ne' (pow_pos hbpos u).ne', Real.log_pow]
-      have hcountpos : (0 : ℝ) < (smoothCount Y y : ℝ) := by
-        have h1 := one_le_smoothCount (Y := Y) (y := y) hY1
+      have hcountpos : (0 : ℝ) < (psiLBCount Y y : ℝ) := by
+        have h1 := one_le_psiLBCount (Y := Y) (y := y) hY1
         exact_mod_cast h1
       have hlogcount : Real.log ((min (Y / y ^ u) (y / 2) : ℕ) : ℝ)
-          + (u : ℝ) * Real.log (D' / (2 * (u : ℝ))) ≤ Real.log (smoothCount Y y : ℝ) := by
+          + (u : ℝ) * Real.log (D' / (2 * (u : ℝ))) ≤ Real.log (psiLBCount Y y : ℝ) := by
         have e := Real.log_le_log (mul_pos hwpos (pow_pos hbpos u)) h3
         rwa [hlogprod] at e
       have h2 := mul_le_mul_of_nonneg_left hlogbase (Nat.cast_nonneg u : (0 : ℝ) ≤ u)
@@ -465,12 +465,12 @@ theorem smoothCount_eventually_ge_exp :
           linarith [e, ee]
         have hlogcount2 : Real.log (Y : ℝ)
             - (u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ)) + 7)
-            ≤ Real.log (smoothCount Y y : ℝ) := by
+            ≤ Real.log (psiLBCount Y y : ℝ) := by
           rw [hweq] at hlogcount
           linarith [hlogcount, hlogw, h2, h1', hlog2, hur1]
         have hgoal : Real.log (Y : ℝ)
             + (-(u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ))) - 7 * (u : ℝ))
-            ≤ Real.log (smoothCount Y y : ℝ) := by linarith [hlogcount2]
+            ≤ Real.log (psiLBCount Y y : ℝ) := by linarith [hlogcount2]
         calc (Y : ℝ) * Real.exp (-(u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ)))
               - 7 * (u : ℝ))
             = Real.exp (Real.log (Y : ℝ)) *
@@ -479,8 +479,8 @@ theorem smoothCount_eventually_ge_exp :
           _ = Real.exp (Real.log (Y : ℝ)
               + (-(u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ)))
                 - 7 * (u : ℝ))) := (Real.exp_add _ _).symm
-          _ ≤ Real.exp (Real.log (smoothCount Y y : ℝ)) := Real.exp_le_exp.mpr hgoal
-          _ = (smoothCount Y y : ℝ) := Real.exp_log hcountpos
+          _ ≤ Real.exp (Real.log (psiLBCount Y y : ℝ)) := Real.exp_le_exp.mpr hgoal
+          _ = (psiLBCount Y y : ℝ) := Real.exp_log hcountpos
       · -- `w = y / 2`: `log w ≥ log y - log 4`.
         have hweq : min (Y / y ^ u) (y / 2) = y / 2 := min_eq_right hmin
         have hwge : (y : ℝ) / 4 ≤ ((y / 2 : ℕ) : ℝ) := by
@@ -494,12 +494,12 @@ theorem smoothCount_eventually_ge_exp :
           linarith [e, ee]
         have hlogcount2 : Real.log (Y : ℝ)
             - (u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ)) + 7)
-            ≤ Real.log (smoothCount Y y : ℝ) := by
+            ≤ Real.log (psiLBCount Y y : ℝ) := by
           rw [hweq] at hlogcount
           linarith [hlogcount, hlogw, h2, h1', hlog4, hLu, hur1]
         have hgoal : Real.log (Y : ℝ)
             + (-(u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ))) - 7 * (u : ℝ))
-            ≤ Real.log (smoothCount Y y : ℝ) := by linarith [hlogcount2]
+            ≤ Real.log (psiLBCount Y y : ℝ) := by linarith [hlogcount2]
         calc (Y : ℝ) * Real.exp (-(u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ)))
               - 7 * (u : ℝ))
             = Real.exp (Real.log (Y : ℝ)) *
@@ -508,8 +508,8 @@ theorem smoothCount_eventually_ge_exp :
           _ = Real.exp (Real.log (Y : ℝ)
               + (-(u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ)))
                 - 7 * (u : ℝ))) := (Real.exp_add _ _).symm
-          _ ≤ Real.exp (Real.log (smoothCount Y y : ℝ)) := Real.exp_le_exp.mpr hgoal
-          _ = (smoothCount Y y : ℝ) := Real.exp_log hcountpos
+          _ ≤ Real.exp (Real.log (psiLBCount Y y : ℝ)) := Real.exp_le_exp.mpr hgoal
+          _ = (psiLBCount Y y : ℝ) := Real.exp_log hcountpos
     · -- Case B: `Δ(y/2) < 2u`; then `u ≥ y/(64 log y)` and the bound is `≤ 1`.
       have hDlt : ((SmoothLB.dyadicPrimes (y / 2)).card : ℝ) < 2 * (u : ℝ) := by
         exact_mod_cast h2u
@@ -542,8 +542,8 @@ theorem smoothCount_eventually_ge_exp :
           ≤ (u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ)) + 7) := by
         have h1 := mul_le_mul_of_nonneg_left hlogu_ge (Nat.cast_nonneg u : (0 : ℝ) ≤ u)
         nlinarith [h1, hule, hLu]
-      have hcnt : (1 : ℝ) ≤ (smoothCount Y y : ℝ) := by
-        have h1 := one_le_smoothCount (Y := Y) (y := y) hY1
+      have hcnt : (1 : ℝ) ≤ (psiLBCount Y y : ℝ) := by
+        have h1 := one_le_psiLBCount (Y := Y) (y := y) hY1
         exact_mod_cast h1
       calc (Y : ℝ) * Real.exp (-(u : ℝ) * (Real.log (u : ℝ) + Real.log (Real.log (y : ℝ)))
             - 7 * (u : ℝ))
@@ -555,18 +555,18 @@ theorem smoothCount_eventually_ge_exp :
               - 7 * (u : ℝ))) := (Real.exp_add _ _).symm
         _ ≤ Real.exp 0 := Real.exp_le_exp.mpr (by linarith [hS])
         _ = 1 := Real.exp_zero
-        _ ≤ (smoothCount Y y : ℝ) := hcnt
+        _ ≤ (psiLBCount Y y : ℝ) := hcnt
 
 /-- The same bound, packaged as an `eventually` statement on `ℕ × ℕ`. -/
-theorem eventually_smoothCount_ge_exp :
+theorem eventually_psiLBCount_ge_exp :
     ∀ᶠ p : ℕ × ℕ in Filter.atTop,
       (p.1 : ℝ) * Real.exp
           (-(⌊Real.log (p.1 : ℝ) / Real.log (p.2 : ℝ)⌋₊ : ℝ) *
             (Real.log (⌊Real.log (p.1 : ℝ) / Real.log (p.2 : ℝ)⌋₊ : ℝ) +
               Real.log (Real.log (p.2 : ℝ))) -
             7 * (⌊Real.log (p.1 : ℝ) / Real.log (p.2 : ℝ)⌋₊ : ℝ))
-        ≤ (smoothCount p.1 p.2 : ℝ) := by
-  obtain ⟨B, hB⟩ := smoothCount_eventually_ge_exp
+        ≤ (psiLBCount p.1 p.2 : ℝ) := by
+  obtain ⟨B, hB⟩ := psiLBCount_eventually_ge_exp
   rw [eventually_atTop]
   refine ⟨(0, B), fun ⟨Y, y⟩ hge => ?_⟩
   exact hB Y y (Prod.le_def.mp hge).2

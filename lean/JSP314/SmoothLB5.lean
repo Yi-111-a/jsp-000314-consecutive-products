@@ -34,7 +34,7 @@ open Finset Filter SmoothLB
 open scoped Topology
 
 /-- `2√2 < 3` (since `√2 < 3/2 ↔ 2 < 9/4`). -/
-theorem two_mul_sqrt_two_lt_three : (2 : ℝ) * Real.sqrt 2 < 3 := by
+theorem two_mul_sqrt_two_lt_three' : (2 : ℝ) * Real.sqrt 2 < 3 := by
   have h : Real.sqrt 2 < 3 / 2 := by
     rw [Real.sqrt_lt' (by norm_num : (0 : ℝ) < 3 / 2)]
     norm_num
@@ -52,7 +52,7 @@ theorem badSingletonCount_eventually_ge_zscale_improved :
       (x : ℝ) * Real.exp (-(3 : ℝ) * Real.sqrt (Real.log x * Real.log (Real.log x)))
         ≤ (badSingletonCount x : ℝ) :=
   SmoothLB4.badSingletonCount_eventually_ge_zscale_two 3
-    two_mul_sqrt_two_lt_three
+    two_mul_sqrt_two_lt_three'
 
 /-- The same bound at the gate constant `C = 4`. -/
 theorem badSingletonCount_eventually_ge_zscale_four :
@@ -60,7 +60,7 @@ theorem badSingletonCount_eventually_ge_zscale_four :
       (x : ℝ) * Real.exp (-(4 : ℝ) * Real.sqrt (Real.log x * Real.log (Real.log x)))
         ≤ (badSingletonCount x : ℝ) :=
   SmoothLB4.badSingletonCount_eventually_ge_zscale_two 4
-    (by linarith [two_mul_sqrt_two_lt_three])
+    (by linarith [two_mul_sqrt_two_lt_three'])
 
 /-- Parameterized form: the z-scale lower bound holds for every `C ≥ 3`
 (in fact for every `C > 2√2`, by `SmoothLB4`). -/
@@ -69,7 +69,7 @@ theorem badSingletonCount_eventually_ge_zscale_of_ge_three (C : ℝ) (hC : 3 ≤
       (x : ℝ) * Real.exp (-C * Real.sqrt (Real.log x * Real.log (Real.log x)))
         ≤ (badSingletonCount x : ℝ) :=
   SmoothLB4.badSingletonCount_eventually_ge_zscale_two C
-    (lt_of_lt_of_le two_mul_sqrt_two_lt_three hC)
+    (lt_of_lt_of_le two_mul_sqrt_two_lt_three' hC)
 
 /-- Existential package matching the shape of
 `SingletonLBz.badSingletonCount_eventually_ge_zscale`, but with the
