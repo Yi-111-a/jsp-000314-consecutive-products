@@ -866,7 +866,7 @@ theorem modEq_of_mul_modEq_of_coprime {K q c m₁ m₂ : ℕ} (hK : 0 < K)
 theorem sum_Ioc_inv_le_log_sub_log {a b : ℕ} (ha : 1 ≤ a) :
     ∑ n ∈ Finset.Icc (a + 1) b, (1 : ℝ) / n ≤ Real.log b - Real.log a := by
   rcases le_or_gt b a with hba | hab
-  · rw [Finset.Icc_eq_empty (by omega : b < a + 1), Finset.sum_empty]
+  · rw [Finset.Icc_eq_empty_of_lt (by omega : b < a + 1), Finset.sum_empty]
     rcases Nat.eq_zero_or_pos b with hb | hb
     · subst hb
       rw [Nat.cast_zero, Real.log_zero]
@@ -881,15 +881,8 @@ theorem sum_Ioc_inv_le_log_sub_log {a b : ℕ} (ha : 1 ≤ a) :
     calc ∑ n ∈ Finset.Icc (a + 1) b, (1 : ℝ) / n
         = ∑ i ∈ Finset.range (b - a), (1 : ℝ) / ((a + 1 + i : ℕ) : ℝ) := by
           rw [show Finset.Icc (a + 1) b = Finset.Ico (a + 1) (b + 1) from rfl,
-            Finset.sum_Ico_eq_sum_range]
-          congr 1
-          · omega
-          · apply Finset.sum_congr rfl
-            intro i _
-            rw [hcast i]
-            congr 1
-            push_cast
-            ring
+            Finset.sum_Ico_eq_sum_range,
+            show b + 1 - (a + 1) = b - a by omega]
       _ ≤ ∑ i ∈ Finset.range (b - a),
             (Real.log ((a : ℝ) + 1 + i) - Real.log ((a : ℝ) + i)) := by
           apply Finset.sum_le_sum
@@ -899,16 +892,22 @@ theorem sum_Ioc_inv_le_log_sub_log {a b : ℕ} (ha : 1 ≤ a) :
             (show 1 ≤ a + i by omega : 1 ≤ a + i)
           have hcast' : ((a + i : ℕ) : ℝ) = (a : ℝ) + i := by push_cast; ring
           rw [hcast'] at hstep
+          rw [show (a : ℝ) + 1 + (i : ℝ) = (a : ℝ) + i + 1 by ring]
           exact hstep
       _ = Real.log ((a : ℝ) + (b - a : ℕ)) - Real.log (a : ℝ) := by
-          rw [Finset.sum_range_sub (fun i => Real.log ((a : ℝ) + i)) (b - a)]
-          congr 1
-          · congr 1
-            push_cast
-            ring
-          · simp
+          have hstep : ∀ i : ℕ, i ∈ Finset.range (b - a) →
+              Real.log ((a : ℝ) + 1 + i) - Real.log ((a : ℝ) + i)
+                = Real.log ((a : ℝ) + ((i + 1 : ℕ) : ℝ))
+                  - Real.log ((a : ℝ) + i) := by
+            intro i _
+            rw [show (a : ℝ) + 1 + (i : ℝ) = (a : ℝ) + ((i + 1 : ℕ) : ℝ) by
+              push_cast; ring]
+          rw [Finset.sum_congr rfl hstep, Finset.sum_range_sub]
+          simp
       _ = Real.log b - Real.log a := by
-          rw [Nat.add_sub_cancel' (Nat.le_of_lt hab)]
+          rw [Nat.cast_sub (Nat.le_of_lt hab)]
+          congr 1
+          ring
 
 /-- **Prime-band reciprocal moment** (Ta26c's `(z^{1−δ}, z^{1+δ}]` prime
 supply, at logarithmic precision):
@@ -1168,7 +1167,7 @@ theorem primePairCong_fiber_card_le {P₁ P₂ p a q₁ : ℕ}
     obtain ⟨hq₁e, hq₂e⟩ := Finset.mem_product.mp hprode
     have hq₂prime := Nat.prime_of_mem_primesLE hq₂e
     have hconge' : e.1 * e.2 ≡ a [MOD p] := hconge
-    have hconge'' : q₁ * e.2 ≡ a [MOD p] := hfe ▸ hconge'
+    have hconge'' : q₁' * e.2 ≡ a [MOD p] := hfe ▸ hconge'
     have hcong : e.2 ≡ m₀ [MOD p] :=
       modEq_of_mul_modEq_of_coprime hp hconge'' hcong₀ ha
     refine Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨?_, ?_⟩, hcong⟩
@@ -1200,7 +1199,7 @@ theorem primePairCongFinset_card_le {P₁ P₂ p a : ℕ}
         ≤ ∑ _b ∈ Nat.primesLE P₁, (P₂ / p + 1) :=
           Finset.sum_le_sum fun q₁ _ => primePairCong_fiber_card_le hp ha
       _ = (Nat.primesLE P₁).card * (P₂ / p + 1) := by
-          rw [Finset.sum_const, nsmul_eq_mul]
+          rw [Finset.sum_const, Nat.nsmul_eq_mul]
   · intro e he
     obtain ⟨hprod, -⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp he)
     exact (Finset.mem_product.mp hprod).1
@@ -1263,14 +1262,14 @@ theorem primePairCong₂_fiber_card_le {P₁ P₂ p p' a a' q₁ : ℕ}
     obtain ⟨hprode, hconge⟩ := Finset.mem_filter.mp hmeme
     obtain ⟨hq₁e, hq₂e⟩ := Finset.mem_product.mp hprode
     have hq₂prime := Nat.prime_of_mem_primesLE hq₂e
-    have hcong₁ : q₁ * e.2 ≡ a [MOD p] := hfe ▸ hconge.1
-    have hcong₂ : q₁ * e.2 ≡ a' [MOD p'] := hfe ▸ hconge.2
+    have hcong₁ : q₁' * e.2 ≡ a [MOD p] := hfe ▸ hconge.1
+    have hcong₂ : q₁' * e.2 ≡ a' [MOD p'] := hfe ▸ hconge.2
     have hmod₁ : e.2 ≡ m₀ [MOD p] :=
       modEq_of_mul_modEq_of_coprime hp hcong₁ hcong₀.1 ha
     have hmod₂ : e.2 ≡ m₀ [MOD p'] :=
       modEq_of_mul_modEq_of_coprime hp' hcong₂ hcong₀.2 ha'
     have hmod : e.2 ≡ m₀ [MOD p * p'] :=
-      (Nat.modEq_and_modEq_iff_modEq_mul hpp).mpr ⟨hmod₁, hmod₂⟩
+      (Nat.modEq_and_modEq_iff_modEq_mul hpp).mp ⟨hmod₁, hmod₂⟩
     refine Finset.mem_filter.mpr ⟨Finset.mem_Icc.mpr ⟨?_, ?_⟩, hmod⟩
     · exact hq₂prime.one_le
     · exact Nat.le_of_mem_primesLE hq₂e
@@ -1302,7 +1301,7 @@ theorem primePairCong₂Finset_card_le {P₁ P₂ p p' a a' : ℕ}
           Finset.sum_le_sum fun q₁ _ =>
             primePairCong₂_fiber_card_le hp hp' hpp ha ha'
       _ = (Nat.primesLE P₁).card * (P₂ / (p * p') + 1) := by
-          rw [Finset.sum_const, nsmul_eq_mul]
+          rw [Finset.sum_const, Nat.nsmul_eq_mul]
   · intro e he
     obtain ⟨hprod, -⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp he)
     exact (Finset.mem_product.mp hprod).1

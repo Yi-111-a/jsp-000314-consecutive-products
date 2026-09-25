@@ -168,7 +168,7 @@ theorem bad_count_period_eq {p k : ℕ} :
         = Finset.range 1 :=
       Finset.filter_true_of_mem fun r _ q' hq' =>
         absurd hq' (Finset.notMem_empty q')
-    rw [htrue, Finset.card_range]
+    rw [htrue, Finset.card_range, Finset.prod_empty]
   | insert q S hqS ih =>
     intro hpw hpos
     have hq : 0 < q := hpos q (Finset.mem_insert_self q S)
@@ -216,8 +216,11 @@ theorem bad_count_period_eq {p k : ℕ} :
     rw [Finset.card_product] at hmul
     rw [hmul, ih (fun a ha b hb hne =>
           hpw a (Finset.mem_insert_of_mem ha) b (Finset.mem_insert_of_mem hb) hne)
-        (fun q' hq' => hpos q' (Finset.mem_insert_of_mem hq')),
-      mul_comm]
+        (fun q' hq' => hpos q' (Finset.mem_insert_of_mem hq'))]
+    have hbeq : (Finset.range q).filter
+        (fun b => ∃ j ∈ Finset.Icc 1 k, q ∣ p ^ 2 * b + j)
+        = badResidues p k q := rfl
+    rw [hbeq]
 
 /-- The number of `b ∈ [0, d)` which are bad for every prime factor of the
 squarefree `d` is `∏_{q ∣ d} min k q`. -/
