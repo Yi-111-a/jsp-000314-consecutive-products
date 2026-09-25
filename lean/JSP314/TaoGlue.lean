@@ -9,7 +9,7 @@ import Mathlib.Tactic
 
 This file closes `badNonSingleton_interval_bound` (`Main.lean`) down to the
 *sharpest* hypothesis shapes currently plausible, so that future rounds only
-need to supply band estimates.  Everything here is proved (no `sorry`, no new
+need to supply band estimates.  Everything here is proved (no placeholders, no new
 axioms); each theorem is a conditional reduction.
 
 ## Contents
@@ -272,7 +272,11 @@ theorem badNonSingleton_interval_bound_of_runBand_twoMul_S
             Real.log (x : ℝ) ^ (-(6 : ℝ)) := by
           rw [← hLpA]; ring
       _ = c * (x : ℝ) ^ (83 / 100 : ℝ) / Real.log (x : ℝ) ^ 6 := by
-          rw [Real.rpow_neg hL.le, Real.rpow_natCast, div_eq_mul_inv]
+          have h6 : Real.log (x : ℝ) ^ (-(6 : ℝ)) =
+              (Real.log (x : ℝ) ^ 6)⁻¹ := by
+            rw [show (-(6 : ℝ)) = -(((6 : ℕ)) : ℝ) by norm_num,
+              Real.rpow_neg hL.le, Real.rpow_natCast]
+          rw [h6, div_eq_mul_inv]
       _ ≤ (badSingletonCount x : ℝ) := hSx
   -- `Cs·S ≤ (L^{ε/2}/4)·S` and `Ca ≤ (L^{ε/2}/4)·S`.
   have hCs : Cs * (badSingletonCount x : ℝ) ≤
