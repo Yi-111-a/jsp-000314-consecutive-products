@@ -6,8 +6,8 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 # JSP-000314 — Final reduction: the residual as a run-band sum
 
 This file compresses the remaining mathematical content of
-`badNonSingleton_interval_bound` (`Main.lean`, currently `sorry`) into a single
-named quantity and a single hypothesis shape.
+`badNonSingleton_interval_bound` (`Main.lean`, the sole unproved placeholder)
+into a single named quantity and a single hypothesis shape.
 
 ## The residual quantity
 
@@ -43,7 +43,7 @@ runBandSum x =
   `ε/2`-plus-divergence mechanism (using `badSingletonCount_mono`,
   `S(x) ≤ S(2x)`).
 
-No `sorry`, no new axioms.
+No unproved placeholders, no new axioms.
 -/
 
 open Nat Filter Classical
