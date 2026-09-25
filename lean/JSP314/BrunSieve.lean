@@ -221,6 +221,7 @@ theorem bad_count_period_eq {p k : ℕ} :
         (fun b => ∃ j ∈ Finset.Icc 1 k, q ∣ p ^ 2 * b + j)
         = badResidues p k q := rfl
     rw [hbeq]
+    exact Nat.mul_comm _ _
 
 /-- The number of `b ∈ [0, d)` which are bad for every prime factor of the
 squarefree `d` is `∏_{q ∣ d} min k q`. -/
@@ -321,7 +322,7 @@ theorem card_Icc_bad_ge {p k y d : ℕ} (hd : Squarefree d)
       obtain ⟨hbd, hbbad⟩ := Finset.mem_filter.mp hb
       rw [Finset.mem_range] at hbd
       obtain ⟨hg1, hg2⟩ := hgmem b (Finset.mem_range.mpr hbd)
-      rw [Finset.mem_filter, Finset.mem_Icc]
+      simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_Icc]
       refine ⟨⟨?_, ?_⟩, ?_⟩
       · omega
       · have h1 : (i + 1) * d ≤ (y / d) * d :=
@@ -420,7 +421,7 @@ theorem sum_powerset_card_le_eq {ι : Type*} [DecidableEq ι] (S : Finset ι)
       = S.powerset.filter fun s => m < s.card :=
     Finset.filter_congr fun s _ => not_le
   rw [hflt] at hsplit
-  rw [← hsplit]
+  rw [hsplit]
   ring
 
 /-- Divisor sums over a squarefree `P` of a function of `d.primeFactors`
@@ -528,7 +529,7 @@ theorem abs_card_dvd_Nprod_sub {p k y d : ℕ} (hd : Squarefree d)
         _ ≤ d * (y / d) + d :=
             Nat.add_le_add_left
               (Nat.mod_lt y (Nat.pos_of_ne_zero hd.ne_zero)).le _
-        _ = (y / d + 1) * d := by rw [add_mul, one_mul]
+        _ = (y / d + 1) * d := by ring
     have h2 : (y : ℝ) ≤ ((y / d + 1) * d : ℕ) := by exact_mod_cast h1
     push_cast at h2 ⊢
     linarith
@@ -679,7 +680,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
           + |(brunLambda P t d : ℝ)|
             * ∏ q ∈ d.primeFactors, ((min k q : ℕ) : ℝ) := by
     intro d hd
-    have habs := abs_card_dvd_Nprod_sub (hd_sq d hd) (hco d hd)
+    have habs := abs_card_dvd_Nprod_sub (k := k) (y := y) (hd_sq d hd) (hco d hd)
     have h2 := abs_le.mp habs
     have heq : (brunLambda P t d : ℝ)
           * (((Finset.Icc 1 y).filter fun r =>
@@ -790,7 +791,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
         have hμabs : |(μ d : ℝ)| = 1 := by
           have hμz : (μ d : ℤ) ≠ 0 :=
             ArithmeticFunction.moebius_ne_zero_iff_squarefree.mpr hdsq
-          have hμ1 : |μ d| ≤ 1 := ArithmeticFunction.abs_moebius_le_one d
+          have hμ1 : |μ d| ≤ 1 := ArithmeticFunction.abs_moebius_le_one (n := d)
           have hμz' : (μ d : ℤ) = 1 ∨ μ d = -1 := by
             rcases eq_or_ne (μ d) 1 with h | h
             · exact Or.inl h
@@ -838,7 +839,8 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
             have hqpos : (0 : ℝ) < q :=
               Nat.cast_pos.mpr (hT q (hs.1 hq)).pos
             rw [div_le_div_iff₀ hqpos hqpos]
-            exact Nat.cast_le.mpr (min_le_left k q)
+            exact mul_le_mul_of_nonneg_right
+              (Nat.cast_le.mpr (min_le_left k q)) hqpos.le
   have herrbd : ∑ s ∈ T.powerset with s.card ≤ 2 * t,
         ∏ q ∈ s, ((min k q : ℕ) : ℝ)
       ≤ (1 + T.card * k : ℝ) ^ (2 * t) := by
@@ -851,7 +853,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
               ≤ ∏ _q ∈ s, (k : ℝ) :=
                 Finset.prod_le_prod₀ (fun q _ => Nat.cast_nonneg _)
                   fun q _ => Nat.cast_le.mpr (min_le_left k q)
-            _ = (k : ℝ) ^ s.card := Finset.prod_const
+            _ = (k : ℝ) ^ s.card := Finset.prod_const _
       _ = ∑ s ∈ T.powerset,
             (if s.card ≤ 2 * t then (k : ℝ) ^ s.card else 0) :=
           Finset.sum_filter _ _
@@ -873,10 +875,10 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
             calc (T.card.choose j : ℝ) * (k : ℝ) ^ j
                 ≤ (T.card : ℝ) ^ j * (k : ℝ) ^ j :=
                   mul_le_mul_of_nonneg_right
-                    (Nat.cast_le.mpr (Nat.choose_le_pow _ _))
+                    (by exact_mod_cast Nat.choose_le_pow _ _)
                     (pow_nonneg (Nat.cast_nonneg _) _)
               _ = ((T.card : ℝ) * k) ^ j := (mul_pow _ _ _).symm
-          · rw [if_neg hj, if_neg hj]
+          · rw [if_neg hj, if_neg hj, mul_zero]
       _ = ∑ j ∈ (Finset.range (T.card + 1)).filter (fun j => j ≤ 2 * t),
             ((T.card : ℝ) * k) ^ j := by
           rw [Finset.sum_filter]
