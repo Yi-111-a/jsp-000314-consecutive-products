@@ -910,17 +910,12 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
   have ht0 : 0 ≤ y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q)
       - y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q) := sub_self _ ▸ le_refl _
   have hmain_nn : 0 ≤ (y : ℝ) := Nat.cast_nonneg _
-  calc y * (∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q)
-          - ∑ s ∈ T.powerset with 2 * t < s.card,
-              (-1 : ℝ) ^ s.card * ∏ q ∈ s, ((min k q : ℕ) : ℝ) / q)
-        + ∑ s ∈ T.powerset with s.card ≤ 2 * t,
-            ∏ q ∈ s, ((min k q : ℕ) : ℝ)
-      = y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q)
+  calc y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q)
         - y * ∑ s ∈ T.powerset with 2 * t < s.card,
             (-1 : ℝ) ^ s.card * ∏ q ∈ s, ((min k q : ℕ) : ℝ) / q
         + ∑ s ∈ T.powerset with s.card ≤ 2 * t,
-            ∏ q ∈ s, ((min k q : ℕ) : ℝ) := by ring
-    _ ≤ y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q)
+            ∏ q ∈ s, ((min k q : ℕ) : ℝ)
+      ≤ y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q)
         + y * ∑ s ∈ T.powerset with 2 * t < s.card, ∏ q ∈ s, (k : ℝ) / q
         + (1 + T.card * k : ℝ) ^ (2 * t) := by
         have hneg :
@@ -967,8 +962,7 @@ theorem siftedOver_card_le_brun_exp {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : �
     rw [le_div_iff₀ (pow_pos hzpos _), mul_comm]
     exact htail
   refine hmain.trans ?_
-  apply add_le_add_right
-  apply add_le_add_left
+  refine add_le_add_right (add_le_add_left ?_ _) _
   rw [← mul_div_assoc]
   exact mul_le_mul_of_nonneg_left htail' (Nat.cast_nonneg _)
 
