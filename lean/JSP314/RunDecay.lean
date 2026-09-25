@@ -97,7 +97,7 @@ theorem dvd_sq_mul_sub_iff {p q M r j : ℕ} (hqM : q ∣ M) (hr : r ≤ M)
     q ∣ p ^ 2 * (M - r) + j ↔ q ∣ p ^ 2 * r - j := by
   have hsub : p ^ 2 * (M - r) = p ^ 2 * M - p ^ 2 * r :=
     Nat.mul_sub_left_distrib _ _ _
-  have hle : p ^ 2 * r ≤ p ^ 2 * M := mul_le_mul_left' hr _
+  have hle : p ^ 2 * r ≤ p ^ 2 * M := Nat.mul_le_mul le_rfl hr
   have hsum : p ^ 2 * (M - r) + j + (p ^ 2 * r - j) = p ^ 2 * M := by
     rw [hsub]; omega
   have hqAB : q ∣ p ^ 2 * (M - r) + j + (p ^ 2 * r - j) := by
@@ -109,7 +109,8 @@ theorem dvd_sq_mul_sub_iff {p q M r j : ℕ} (hqM : q ∣ M) (hr : r ≤ M)
 `(p, w]` and `P = ∏_{q∈T} q`, `M = (y/P + 1)·P` (`≤ y + P`), the map
 `r ↦ M - r` sends left-sifted `r` with `k < p²r` to right-sifted `s ∈
 [1, M]`, and the remaining `r` satisfy `r ≤ k`. -/
-theorem runSiftedLeft_card_le_siftedOver_add (hp : 0 < p) (y p k w : ℕ) :
+theorem runSiftedLeft_card_le_siftedOver_add {p : ℕ} (hp : 0 < p)
+    (y k w : ℕ) :
     (runSiftedLeft y p k w).card ≤
       (siftedOver ((y / ∏ q ∈ (Finset.Ioc p w).filter Nat.Prime, q + 1)
           * ∏ q ∈ (Finset.Ioc p w).filter Nat.Prime, q) p k
@@ -139,8 +140,8 @@ theorem runSiftedLeft_card_le_siftedOver_add (hp : 0 < p) (y p k w : ℕ) :
       rw [Finset.mem_filter, mem_runSiftedLeft] at hr
       obtain ⟨⟨hrI, -⟩, hle⟩ := hr
       rw [Finset.mem_Icc] at hrI ⊢
-      exact ⟨hrI.1, (Nat.le_mul_of_pos_left r (pow_pos hp 2)).trans
-        (le_of_not_gt hle)⟩
+      have hpr : r ≤ p ^ 2 * r := Nat.le_mul_of_pos_left r (pow_pos hp 2)
+      exact ⟨hrI.1, hpr.trans (le_of_not_gt hle)⟩
     exact (Finset.card_le_card hsub).trans (by rw [Nat.card_Icc]; omega)
   have hmain : ((runSiftedLeft y p k w).filter (fun r => k < p ^ 2 * r)).card
       ≤ (siftedOver M p k T).card := by
@@ -156,11 +157,10 @@ theorem runSiftedLeft_card_le_siftedOver_add (hp : 0 < p) (y p k w : ℕ) :
       intro q hq j hj
       have hqP : q ∣ P := by rw [hP]; exact Finset.dvd_prod_of_mem _ hq
       have hqM : q ∣ M := by rw [hM]; exact hqP.trans (dvd_mul_left _ _)
-      have hjr : j ≤ p ^ 2 * r := by
-        have := (Finset.mem_Icc.mp hj).2
-        omega
+      have hjr : j ≤ p ^ 2 * r := le_trans hj.2 hkr.le
       rw [dvd_sq_mul_sub_iff hqM (le_trans hr1.2 hyM.le) hjr]
-      exact hcond q (by rw [← hT]; exact hq) j hj (by omega)
+      exact hcond q (by rw [← hT]; exact hq) j (Finset.mem_Icc.mpr hj)
+        (by omega)
     · intro a ha b hb hab
       have haM : a ≤ M := by
         have := (Finset.mem_filter.mp (Finset.mem_coe.mp ha)).1
@@ -190,7 +190,7 @@ theorem leftRunCount_le_brun {p : ℕ} (hp : p.Prime) (x k w t : ℕ) :
         + (1 + ((Finset.Ioc p w).filter Nat.Prime).card * k : ℝ) ^ (2 * t)
         + k := by
   have hle := (leftRunCount_le_runSiftedLeft hp).trans
-    (runSiftedLeft_card_le_siftedOver_add hp.pos (2 * x / p ^ 2) p k w)
+    (runSiftedLeft_card_le_siftedOver_add hp.pos (2 * x / p ^ 2) k w)
   have hbrun := siftedOver_card_le_brun hp
     ((2 * x / p ^ 2 / ∏ q ∈ (Finset.Ioc p w).filter Nat.Prime, q + 1)
       * ∏ q ∈ (Finset.Ioc p w).filter Nat.Prime, q) k t
