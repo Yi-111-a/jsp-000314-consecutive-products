@@ -1,5 +1,5 @@
 import JSP314.SmallBandZ
-import JSP314.AntiSieve
+import JSP314.AntiSieveCore
 import JSP314.QuadMertens
 import Mathlib.Tactic
 
@@ -153,7 +153,8 @@ theorem inv_le_log_div_pred_of_le {q T : ℕ} (hq : 2 ≤ q) (hT : 2 ≤ T)
     Real.log_le_log (by positivity : (0 : ℝ) < T) (by exact_mod_cast hTq)
   have hkey : ((q - 1 : ℕ) : ℝ) * Real.log T ≤ q * Real.log q := by
     calc ((q - 1 : ℕ) : ℝ) * Real.log T
-        ≤ q * Real.log T := mul_le_mul_of_nonneg_right hq1 hlogT.le
+        ≤ q * Real.log T := mul_le_mul_of_nonneg_right
+            (by exact_mod_cast Nat.sub_le q 1) hlogT.le
       _ ≤ q * Real.log q :=
           mul_le_mul_of_nonneg_left hlogq (by positivity)
   have hq0 : (q : ℝ) ≠ 0 := by positivity
@@ -183,18 +184,19 @@ theorem sum_primesLE_rpow_neg_add_le (T : ℕ) {η : ℝ} (hη : 0 ≤ η) (hT :
         exact mul_le_mul (inv_le_log_div_pred hqq.two_le)
           (Real.rpow_le_rpow (Nat.cast_nonneg q) hqT hη)
           (Real.rpow_nonneg (Nat.cast_nonneg q) _)
-          (div_nonneg (Real.log_nonneg (by exact_mod_cast hqq.one_lt.le))
-            (mul_nonneg (Nat.cast_nonneg _) hlog2.le))
+          (div_nonneg (div_nonneg
+            (Real.log_nonneg (by exact_mod_cast hqq.one_lt.le))
+            (Nat.cast_nonneg _)) hlog2.le)
     _ = (T : ℝ) ^ η *
           (∑ q ∈ Nat.primesLE T, Real.log q / ((q - 1 : ℕ) : ℝ)) /
             Real.log 2 := by
-        rw [Finset.sum_div, Finset.mul_sum]
+        rw [Finset.mul_sum, Finset.sum_div]
         refine Finset.sum_congr rfl fun q _ => ?_
         ring
     _ ≤ (T : ℝ) ^ η * (2 * Real.log T + 11) / Real.log 2 := by
-        rw [mul_div_assoc]
-        refine (div_le_div_right hlog2).mpr
-          (mul_le_mul_of_nonneg_left (sum_log_div_pred_primesLE_le hT)
+        refine (div_le_div_iff_of_pos_right hlog2).mpr
+          (mul_le_mul_of_nonneg_left
+            (SylvesterSchur.sum_log_div_pred_primesLE_le hT)
             (Real.rpow_nonneg (Nat.cast_nonneg T) _))
 
 /-- **Top level of the two-split**: on `T < q ≤ Z` the factor `1/log T` is
@@ -223,21 +225,21 @@ theorem sum_primesLE_gt_rpow_neg_add_le (Z T : ℕ) {η : ℝ} (hη : 0 ≤ η)
         exact mul_le_mul (inv_le_log_div_pred_of_le hqq.two_le hT hTq)
           (Real.rpow_le_rpow (Nat.cast_nonneg q) hqZR hη)
           (Real.rpow_nonneg (Nat.cast_nonneg q) _)
-          (div_nonneg (Real.log_nonneg (by exact_mod_cast hqq.one_lt.le))
-            (mul_nonneg (Nat.cast_nonneg _) hlogT.le))
+          (div_nonneg (div_nonneg
+            (Real.log_nonneg (by exact_mod_cast hqq.one_lt.le))
+            (Nat.cast_nonneg _)) hlogT.le)
     _ = (Z : ℝ) ^ η *
           (∑ q ∈ (Nat.primesLE Z).filter (fun q => ¬ q ≤ T),
             Real.log q / ((q - 1 : ℕ) : ℝ)) / Real.log T := by
-        rw [Finset.sum_div, Finset.mul_sum]
+        rw [Finset.mul_sum, Finset.sum_div]
         refine Finset.sum_congr rfl fun q _ => ?_
         ring
     _ ≤ (Z : ℝ) ^ η * (2 * Real.log Z + 11) / Real.log T := by
-        rw [mul_div_assoc]
-        refine (div_le_div_right hlogT).mpr
+        refine (div_le_div_iff_of_pos_right hlogT).mpr
           (mul_le_mul_of_nonneg_left ?_ (Real.rpow_nonneg (Nat.cast_nonneg Z) _))
         refine (Finset.sum_le_sum_of_subset_of_nonneg
           (Finset.filter_subset _ _) fun q hq _ => ?_).trans
-          (sum_log_div_pred_primesLE_le hZ)
+          (SylvesterSchur.sum_log_div_pred_primesLE_le hZ)
         have hqq := Nat.prime_of_mem_primesLE hq
         exact div_nonneg (Real.log_nonneg (by exact_mod_cast hqq.one_lt.le))
           (Nat.cast_nonneg _)
@@ -249,7 +251,7 @@ theorem sum_primesLE_rpow_neg_add_two_split (Z T : ℕ) {η : ℝ} (hη : 0 ≤ 
     ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η) ≤
       (T : ℝ) ^ η * (2 * Real.log T + 11) / Real.log 2 +
         (Z : ℝ) ^ η * (2 * Real.log Z + 11) / Real.log T := by
-  have hZ : 1 ≤ Z := hT.trans hTZ
+  have hZ : 1 ≤ Z := by omega
   have hsplit : (Nat.primesLE Z).filter (fun q => q ≤ T) = Nat.primesLE T := by
     ext q
     simp only [Finset.mem_filter, Nat.mem_primesLE]
@@ -320,21 +322,22 @@ theorem smallBandSum_le_euler (x Z : ℕ) {η : ℝ} (hη0 : 0 < η)
         (2 * x : ℝ) ^ (1 - η) * ((p : ℝ) ^ 2) ^ (-(1 - η)) := by
       have hcast : ((2 * x / p ^ 2 : ℕ) : ℝ) ≤
           (2 * x : ℝ) / (p : ℝ) ^ 2 := by
-        rw [Nat.cast_pow]
-        exact Nat.cast_div_le
+        refine Nat.cast_div_le.trans (le_of_eq ?_)
+        norm_cast
       have h1 : ((2 * x / p ^ 2 : ℕ) : ℝ) ^ (1 - η) ≤
           ((2 * x : ℝ) / (p : ℝ) ^ 2) ^ (1 - η) :=
         Real.rpow_le_rpow (Nat.cast_nonneg _) hcast (by linarith)
-      rwa [Real.div_rpow (Nat.cast_nonneg _)
-          (pow_nonneg (Nat.cast_nonneg _) _),
-        Real.rpow_neg (pow_nonneg (Nat.cast_nonneg _) _),
-        div_eq_mul_inv] at h1
+      rwa [Real.div_rpow (show (0 : ℝ) ≤ 2 * (x : ℝ) by positivity)
+          (pow_nonneg (Nat.cast_nonneg _) _) _,
+        div_eq_mul_inv,
+        ← Real.rpow_neg (pow_nonneg (Nat.cast_nonneg _) _)] at h1
     have hpm : (p : ℝ) * ((p : ℝ) ^ 2) ^ (-(1 - η)) =
         (p : ℝ) ^ (-1 + 2 * η) := by
       have hpsq : ((p : ℝ) ^ 2) ^ (-(1 - η)) = (p : ℝ) ^ (-2 + 2 * η) := by
         rw [← Real.rpow_natCast (p : ℝ) 2, ← Real.rpow_mul hp0.le]
         congr 1; ring
-      rw [hpsq, ← Real.rpow_one (p : ℝ), ← Real.rpow_add hp0]
+      rw [hpsq, mul_comm (p : ℝ) ((p : ℝ) ^ (-2 + 2 * η)),
+        ← Real.rpow_add_one hp0.ne']
       congr 1; ring
     calc (p : ℝ) * (lpfCount (2 * x / p ^ 2) p : ℝ)
         ≤ (p : ℝ) * (((2 * x / p ^ 2 : ℕ) : ℝ) ^ (1 - η) *
@@ -368,7 +371,7 @@ theorem smallBandSum_le_euler (x Z : ℕ) {η : ℝ} (hη0 : 0 < η)
       _ = (2 * x : ℝ) ^ (1 - η) *
             Real.exp (4 * ∑ q ∈ Nat.primesLE Z, (q : ℝ) ^ (-1 + η)) *
               ∑ p ∈ Nat.primesLE Z, (p : ℝ) ^ (-1 + 2 * η) := by
-          rw [Finset.mul_sum]
+          rw [Finset.mul_sum, Finset.mul_sum]
   calc ((∑ p ∈ Nat.primesLE Z, ∑ k ∈ Finset.Icc 1 (2 * p),
         (rightRunCount x p k + leftRunCount x p k) : ℕ) : ℝ)
       ≤ ((4 * ∑ p ∈ Nat.primesLE Z,

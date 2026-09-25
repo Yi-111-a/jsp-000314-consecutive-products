@@ -194,6 +194,14 @@ theorem smoothCount_mono {N₁ N₂ y : ℕ} (h : N₁ ≤ N₂) :
   obtain ⟨hs1, hsN⟩ := Finset.mem_Icc.mp hsI
   exact ⟨Finset.mem_Icc.mpr ⟨hs1, hsN.trans h⟩, hlp⟩
 
+/-- Monotonicity of `smoothCount` in the smoothness bound. -/
+theorem smoothCount_mono_y {N y₁ y₂ : ℕ} (h : y₁ ≤ y₂) :
+    smoothCount N y₁ ≤ smoothCount N y₂ := by
+  apply Finset.card_le_card
+  intro s hs
+  simp only [smoothFinset, Finset.mem_filter] at hs ⊢
+  exact ⟨hs.1, hs.2.trans h⟩
+
 /-! ### Bridge lemmas (formerly imported from `JSP314.APPsi`)
 
 `JSP314.APPsi` is currently broken upstream, so the handful of results this

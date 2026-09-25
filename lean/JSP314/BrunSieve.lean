@@ -101,16 +101,18 @@ theorem badResidues_card_le {p k q : ℕ} (hq : 0 < q)
     refine ⟨j, hj, ?_⟩
     have hz : (b : ZMod q) = -(↑u⁻¹ * (j : ZMod q)) := by
       have h0 : ((p ^ 2 * b + j : ℕ) : ZMod q) = 0 :=
-        ZMod.natCast_eq_zero_iff.mpr hdvd
+        (ZMod.natCast_eq_zero_iff _ _).mpr hdvd
       rw [Nat.cast_add, Nat.cast_mul, Nat.cast_pow] at h0
       have hpb : (p : ZMod q) ^ 2 * (b : ZMod q) = -(j : ZMod q) :=
         eq_neg_of_add_eq_zero_left h0
       calc (b : ZMod q) = ↑u⁻¹ * ((p : ZMod q) ^ 2 * (b : ZMod q)) := by
-            rw [← mul_assoc, hi, one_mul]
+            rw [← mul_assoc, mul_comm (↑u⁻¹ : ZMod q) ((p : ZMod q) ^ 2), hi,
+              one_mul]
         _ = ↑u⁻¹ * -(j : ZMod q) := by rw [hpb]
         _ = -(↑u⁻¹ * (j : ZMod q)) := by rw [mul_neg]
     have hv := congrArg ZMod.val hz
-    rwa [ZMod.val_natCast_of_lt hblt] at hv
+    rw [ZMod.val_natCast_of_lt hblt] at hv
+    exact hv.symm
   refine le_min ?_ ?_
   · calc (badResidues p k q).card
         ≤ ((Finset.Icc 1 k).image _).card := Finset.card_le_card hsub
@@ -141,7 +143,7 @@ theorem badResidues_card_eq {p k q : ℕ} (hq : 0 < q)
     (s := Finset.range q)
   rw [Finset.card_range] at hsum
   rw [← hneg] at hsum
-  have hle := sifted_count_mod_prime_le hq hco
+  have hle := sifted_count_mod_prime_le (k := k) hq hco
   have hge : min k q ≤ (badResidues p k q).card := by omega
   exact le_antisymm (badResidues_card_le hq hco) hge
 
@@ -165,7 +167,7 @@ theorem bad_count_period_eq {p k : ℕ} :
           q' ∣ p ^ 2 * r + j)
         = Finset.range 1 :=
       Finset.filter_true_of_mem fun r _ q' hq' =>
-        absurd hq' (Finset.not_mem_empty q')
+        absurd hq' (Finset.notMem_empty q')
     rw [htrue, Finset.card_range]
   | insert q S hqS ih =>
     intro hpw hpos
@@ -193,19 +195,19 @@ theorem bad_count_period_eq {p k : ℕ} :
       rw [Finset.forall_mem_insert]
       constructor
       · rintro ⟨hq', hS'⟩
-        refine ⟨fun q' hq'' => ?_, fun j hj => ?_⟩
+        refine ⟨fun q' hq'' => ?_, ?_⟩
         · obtain ⟨j, hj, hd⟩ := hS' q' hq''
           exact ⟨j, hj, (dvd_sq_mul_add_iff_dvd_mod
             (Finset.dvd_prod_of_mem _ hq'')).mp hd⟩
-        · obtain ⟨j, hj, hd⟩ := hq' j hj
+        · obtain ⟨j, hj, hd⟩ := hq'
           exact ⟨j, hj, (dvd_sq_mul_add_iff_dvd_mod (dvd_refl q)).mp hd⟩
       · rintro ⟨hS', hq'⟩
-        refine ⟨fun j hj => ?_, fun q' hq'' j hj => ?_⟩
-        · obtain ⟨j, hj, hd⟩ := hq'
-          exact ⟨j, hj, (dvd_sq_mul_add_iff_dvd_mod (dvd_refl q)).mpr hd⟩
-        · obtain ⟨j', hj', hd⟩ := hS' q' hq''
-          exact ⟨j', hj', (dvd_sq_mul_add_iff_dvd_mod
-            (Finset.dvd_prod_of_mem _ hq'')).mpr hd⟩
+        obtain ⟨j, hj, hd⟩ := hq'
+        refine ⟨⟨j, hj, (dvd_sq_mul_add_iff_dvd_mod (dvd_refl q)).mpr hd⟩,
+          fun q' hq'' => ?_⟩
+        obtain ⟨j', hj', hd'⟩ := hS' q' hq''
+        exact ⟨j', hj', (dvd_sq_mul_add_iff_dvd_mod
+          (Finset.dvd_prod_of_mem _ hq'')).mpr hd'⟩
     rw [hfilt, Finset.prod_insert hqS]
     have hmul := card_filter_range_mul hP hq hcoPq
       (A := fun a => ∀ q' ∈ S, ∃ j ∈ Finset.Icc 1 k,
@@ -296,9 +298,11 @@ theorem card_Icc_bad_ge {p k y d : ℕ} (hd : Squarefree d)
   have hkey : ∀ i b, b ∈ Finset.range d → (i * d + g b - 1) / d = i := by
     intro i b hb
     obtain ⟨hg1, hg2⟩ := hgmem b hb
-    have hrew : i * d + g b - 1 = d * i + (g b - 1) := by omega
+    have hrew : i * d + g b - 1 = d * i + (g b - 1) := by
+      rw [mul_comm i d]
+      exact Nat.add_sub_assoc hg1 _
     rw [hrew, Nat.mul_add_div hd0]
-    have : (g b - 1) / d = 0 := Nat.div_eq_zero_of_lt (by omega)
+    have : (g b - 1) / d = 0 := Nat.div_eq_zero_iff.mpr (Or.inr (by omega))
     omega
   have hcard : ((Finset.range (y / d)) ×ˢ
       (Finset.range d).filter
@@ -366,7 +370,7 @@ theorem dvd_Nprod_iff {p k r d : ℕ} (hd : Squarefree d) :
   constructor
   · intro hdvd q hq
     have hqN : q ∣ Nprod p k r := (Nat.dvd_of_mem_primeFactors hq).trans hdvd
-    exact (Nat.prime_of_mem_primeFactors hq).prime.dvd_finsetProd_iff.mp hqN
+    exact ((Nat.prime_of_mem_primeFactors hq).prime.dvd_finsetProd_iff _).mp hqN
   · intro hall
     rw [← Nat.prod_primeFactors_of_squarefree hd,
       Nat.prod_primeFactors_dvd_iff hNr]
@@ -401,12 +405,13 @@ theorem sum_powerset_card_le_eq {ι : Type*} [DecidableEq ι] (S : Finset ι)
     Finset.disjoint_filter_filter_not _ _ _
   have hunion : S.powerset.filter (fun s => s.card ≤ m)
       ∪ S.powerset.filter (fun s => ¬ s.card ≤ m)
-      = S.powerset := Finset.filter_union_filter_not_eq _
+      = S.powerset := Finset.filter_union_filter_not_eq _ _
   have hsplit : ∑ s ∈ S.powerset, (-1 : ℝ) ^ s.card * ∏ q ∈ s, f q
       = ∑ s ∈ S.powerset with s.card ≤ m, (-1 : ℝ) ^ s.card * ∏ q ∈ s, f q
         + ∑ s ∈ S.powerset with ¬ s.card ≤ m,
             (-1 : ℝ) ^ s.card * ∏ q ∈ s, f q := by
-    rw [← hunion, Finset.sum_union hdisj]
+    conv_lhs => rw [← hunion]
+    rw [Finset.sum_union hdisj]
   rw [sum_powerset_neg_one_pow_mul_prod S f] at hsplit
   have hflt : S.powerset.filter (fun s => ¬ s.card ≤ m)
       = S.powerset.filter fun s => m < s.card :=
@@ -459,7 +464,7 @@ theorem powerset_tail_le_exp {ι : Type*} [DecidableEq ι] (S : Finset ι)
       ≤ Real.exp (z * ∑ q ∈ S, f q) := by
   have hprod : ∏ q ∈ S, (1 + z * f q)
       = ∑ s ∈ S.powerset, (∏ q ∈ s, f q) * z ^ s.card := by
-    have e : ∏ q ∈ S, (1 + z * f q) = ∏ q ∈ S, (z * f q + 1) :=
+    have e : ∏ q ∈ S, (1 + z * f q) = ∏ q ∈ S, (f q * z + 1) :=
       Finset.prod_congr rfl fun q _ => by ring
     rw [e, Finset.prod_add]
     refine Finset.sum_congr rfl fun s _ => ?_
@@ -487,7 +492,7 @@ theorem powerset_tail_le_exp {ι : Type*} [DecidableEq ι] (S : Finset ι)
             (pow_nonneg (by linarith) _)
     _ = ∏ q ∈ S, (1 + z * f q) := hprod.symm
     _ ≤ Real.exp (∑ q ∈ S, z * f q) :=
-        Real.prod_one_add_le_exp_sum _ fun q _ =>
+        Real.prod_one_add_le_exp_sum _ fun q =>
           mul_nonneg (by linarith) (hf q)
     _ = Real.exp (z * ∑ q ∈ S, f q) := by rw [← Finset.mul_sum]
 
@@ -540,7 +545,7 @@ theorem abs_card_dvd_Nprod_sub {p k y d : ℕ} (hd : Squarefree d)
   · -- `-B ≤ A - y/d·B`: from `A ≥ fl·B` and `y/d·B ≤ (fl+1)·B`
     have h3 : (y : ℝ) / d * B ≤ ((y / d : ℕ) : ℝ) * B + B := by
       have := mul_le_mul_of_nonneg_right hfl2 hBnn
-      rw [add_mul, mul_one] at this
+      rw [add_mul, one_mul] at this
       exact this
     linarith
   · -- `A - y/d·B ≤ B`: from `A ≤ (fl+1)·B` and `fl·B ≤ y/d·B`
@@ -579,7 +584,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
     intro d hd q hq
     have hqT : q ∈ T := hpf_sub d hd hq
     have hqp : q.Prime := hT q hqT
-    exact (Nat.coprime_pow_left_iff (by norm_num : (0 : ℕ) < 2)).mpr
+    exact (Nat.coprime_pow_left_iff (by norm_num : (0 : ℕ) < 2) _ _).mpr
       ((Nat.coprime_primes hp hqp).mpr (ne_of_lt (hpT q hqT)))
   -- (a) sifted ⇒ coprime ⇒ ν = 1
   have hcop : ∀ r ∈ siftedOver y p k T, Nat.Coprime (Nprod p k r) P := by
@@ -590,7 +595,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
     have hqT : q ∈ T := by
       rw [← hPpf]
       exact Nat.mem_primeFactors.mpr ⟨hqp, hqP, hP0⟩
-    obtain ⟨j, hj, hjd⟩ := hqp.prime.dvd_finsetProd_iff.mp hqN
+    obtain ⟨j, hj, hjd⟩ := (hqp.prime.dvd_finsetProd_iff _).mp hqN
     exact hr.2 q hqT j hj hjd
   -- (b) card ≤ ∑ ν(N r)
   have hcard_le : ((siftedOver y p k T).card : ℤ)
@@ -628,12 +633,11 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
       have hsub : ∑ d ∈ (Nprod p k r).divisors, brunLambda P t d
           = ∑ d ∈ (Nprod p k r).divisors ∩ P.divisors,
               brunLambda P t d := by
-        apply Finset.sum_subset Finset.inter_subset_left
+        refine (Finset.sum_subset Finset.inter_subset_left ?_).symm
         intro d hd hdnot
-        rw [Finset.mem_inter, Nat.mem_divisors] at hdnot
-        have hdP : ¬ d ∣ P :=
+        rw [Finset.mem_inter] at hdnot
+        exact brunLambda_of_not_dvd
           fun h => hdnot ⟨hd, Nat.mem_divisors.mpr ⟨h, hP0⟩⟩
-        exact brunLambda_of_not_dvd hdP
       rw [hsub, hset]
       exact Finset.sum_filter _ _
     rw [Finset.sum_congr rfl step, Finset.sum_comm]
@@ -757,7 +761,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
         have hdd : (d : ℝ) = ∏ q ∈ d.primeFactors, (q : ℝ) := by
           conv_lhs => rw [← Nat.prod_primeFactors_of_squarefree hdsq]
           rw [Nat.cast_prod]
-        rw [hμ, hdd, ← Finset.prod_div_distrib, Nat.cast_prod]
+        rw [hμ, hdd, mul_div_assoc, ← Finset.prod_div_distrib]
       · rw [if_neg hω,
           show brunLambda P t d = 0 from if_neg fun h => hω h.2]
         simp
@@ -784,9 +788,16 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
           have hμz : (μ d : ℤ) ≠ 0 :=
             ArithmeticFunction.moebius_ne_zero_iff_squarefree.mpr hdsq
           have hμ1 : |μ d| ≤ 1 := ArithmeticFunction.abs_moebius_le_one d
-          have : (μ d : ℤ) = 1 ∨ μ d = -1 := by omega
-          rcases this with h | h <;> rw [h] <;> norm_num
-        rw [hμabs, one_mul, Nat.cast_prod]
+          have hμz' : (μ d : ℤ) = 1 ∨ μ d = -1 := by
+            rcases eq_or_ne (μ d) 1 with h | h
+            · exact Or.inl h
+            · rcases eq_or_ne (μ d) (-1) with h | h
+              · exact Or.inr h
+              · exfalso
+                rw [abs_le] at hμ1
+                omega
+          rcases hμz' with h | h <;> rw [h] <;> norm_num
+        rw [hμabs, one_mul]
       · rw [if_neg hω,
           show brunLambda P t d = 0 from if_neg fun h => hω h.2]
         simp
@@ -817,7 +828,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
           apply Finset.sum_le_sum
           intro s hs
           rw [Finset.mem_filter, Finset.mem_powerset] at hs
-          apply Finset.prod_le_prod
+          apply Finset.prod_le_prod₀
           · intro q _
             exact div_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _)
           · intro q hq
@@ -835,7 +846,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
           intro s _
           calc ∏ q ∈ s, ((min k q : ℕ) : ℝ)
               ≤ ∏ _q ∈ s, (k : ℝ) :=
-                Finset.prod_le_prod (fun q _ => Nat.cast_nonneg _)
+                Finset.prod_le_prod₀ (fun q _ => Nat.cast_nonneg _)
                   fun q _ => Nat.cast_le.mpr (min_le_left k q)
             _ = (k : ℝ) ^ s.card := Finset.prod_const
       _ = ∑ s ∈ T.powerset,
@@ -849,7 +860,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
           refine h.trans ?_
           apply Finset.sum_congr rfl
           intro j _
-          rw [nsmul_eq_mul]
+          simp only [nsmul_eq_mul]
       _ ≤ ∑ j ∈ Finset.range (T.card + 1),
             (if j ≤ 2 * t then ((T.card : ℝ) * k) ^ j else 0) := by
           apply Finset.sum_le_sum
@@ -881,7 +892,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
           intro j hj
           rw [Finset.mem_range] at hj
           have hc1 : (1 : ℝ) ≤ ((2 * t).choose j : ℝ) := by
-            exact_mod_cast Nat.choose_pos.mpr (by omega : j ≤ 2 * t)
+            exact_mod_cast Nat.choose_pos (by omega : j ≤ 2 * t)
           have h1 : ((T.card : ℝ) * k) ^ j * (1 : ℝ) ^ (2 * t - j)
               = ((T.card : ℝ) * k) ^ j := by rw [one_pow, mul_one]
           rw [h1]
@@ -903,7 +914,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
         - y * ∑ s ∈ T.powerset with 2 * t < s.card,
             (-1 : ℝ) ^ s.card * ∏ q ∈ s, ((min k q : ℕ) : ℝ) / q
         + ∑ s ∈ T.powerset with s.card ≤ 2 * t,
-            ∏ q ∈ s, ((min k q : ℕ) : ℝ) := by rw [mul_sub]
+            ∏ q ∈ s, ((min k q : ℕ) : ℝ) := by ring
     _ ≤ y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q)
         + y * ∑ s ∈ T.powerset with 2 * t < s.card, ∏ q ∈ s, (k : ℝ) / q
         + (1 + T.card * k : ℝ) ^ (2 * t) := by
@@ -944,7 +955,7 @@ theorem siftedOver_card_le_brun_exp {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : �
     apply Finset.sum_congr rfl
     intro q _
     rw [div_eq_mul_inv]
-  rw [hsum, mul_assoc] at htail
+  rw [hsum, ← mul_assoc] at htail
   have hzpos : (0 : ℝ) < z := by linarith
   have htail' : ∑ s ∈ T.powerset with 2 * t < s.card, ∏ q ∈ s, (k : ℝ) / q
       ≤ Real.exp (z * k * ∑ q ∈ T, (q : ℝ)⁻¹) / z ^ (2 * t) := by

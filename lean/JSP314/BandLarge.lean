@@ -484,7 +484,7 @@ theorem bandLarge_lo_le :
               (2 * x : ℝ) / (p : ℝ) ^ 2 := by
             calc ((2 * x / p ^ 2 : ℕ) : ℝ) ≤ ↑(2 * x) / ↑(p ^ 2) :=
                 Nat.cast_div_le
-              _ = (2 * x : ℝ) / (p : ℝ) ^ 2 := by push_cast
+              _ = (2 * x : ℝ) / (p : ℝ) ^ 2 := by norm_cast
           exact mul_le_mul_of_nonneg_left hcast (by norm_num)
       _ = _ := by rw [hsum]
   have hbound2 : (bandLargeLo x : ℝ) ≤
