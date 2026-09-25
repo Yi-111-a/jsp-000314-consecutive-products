@@ -67,7 +67,8 @@ theorem rightRunCount_le_brun {p : ℕ} (hp : p.Prime) (x k w t : ℕ) :
             ∑ s ∈ ((Finset.Ioc p w).filter Nat.Prime).powerset
               with 2 * t < s.card, ∏ q ∈ s, (k : ℝ) / q
         + (1 + ((Finset.Ioc p w).filter Nat.Prime).card * k : ℝ) ^ (2 * t) := by
-  refine (Nat.cast_le.mpr (rightRunCount_le_siftedSet hp)).trans ?_
+  refine (Nat.cast_le.mpr
+    (rightRunCount_le_siftedSet (w := w) hp)).trans ?_
   exact siftedSet_card_le_brun hp _ k w t
 
 /-- **Brun bound, restricted prime set + exponential tail** applied to
@@ -80,7 +81,8 @@ theorem rightRunCount_le_brun_subset_exp {p : ℕ} (hp : p.Prime) (x k w t : ℕ
         + ((2 * x / p ^ 2 : ℕ) : ℝ) *
             Real.exp (z * k * ∑ q ∈ T, (q : ℝ)⁻¹) / z ^ (2 * t)
         + (1 + T.card * k : ℝ) ^ (2 * t) := by
-  refine (Nat.cast_le.mpr (rightRunCount_le_siftedSet hp)).trans ?_
+  refine (Nat.cast_le.mpr
+    (rightRunCount_le_siftedSet (w := w) hp)).trans ?_
   exact siftedSet_card_le_brun_subset_exp hp _ k w t T hT hz
 
 end BrunApplication
@@ -191,7 +193,9 @@ theorem leftRunCount_le_brun {p : ℕ} (hp : p.Prime) (x k w t : ℕ) :
         + k := by
   have hle := (leftRunCount_le_runSiftedLeft hp).trans
     (runSiftedLeft_card_le_siftedOver_add (2 * x / p ^ 2) p k w)
-  have hbrun := siftedOver_card_le_brun hp _ k t
+  have hbrun := siftedOver_card_le_brun hp
+    ((2 * x / p ^ 2 / ∏ q ∈ (Finset.Ioc p w).filter Nat.Prime, q + 1)
+      * ∏ q ∈ (Finset.Ioc p w).filter Nat.Prime, q) k t
     ((Finset.Ioc p w).filter Nat.Prime)
     (fun q hq => (Finset.mem_filter.mp hq).2)
     (fun q hq => (Finset.mem_Ioc.mp (Finset.mem_filter.mp hq).1).1)
@@ -240,7 +244,7 @@ theorem prod_one_sub_min_le_exp (k : ℕ) (T : Finset ℕ) :
     rw [min_eq_left hq.2.le]
   have hrest : ∏ q ∈ T.filter (fun q => ¬ k < q), (1 - ((min k q : ℕ) : ℝ) / q)
       ≤ 1 :=
-    Finset.prod_le_one (fun q _ => (h01 q).1) (fun q _ => (h01 q).2)
+    Finset.prod_le_one₀ (fun q _ => (h01 q).1) (fun q _ => (h01 q).2)
   have hmain : ∏ q ∈ S, (1 - (k : ℝ) / q)
       ≤ Real.exp (-(k : ℝ) * ∑ q ∈ S, (q : ℝ)⁻¹) := by
     have hterm : ∀ q ∈ S, (1 - (k : ℝ) / q)

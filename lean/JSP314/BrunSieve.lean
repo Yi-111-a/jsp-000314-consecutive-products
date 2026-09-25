@@ -967,7 +967,7 @@ theorem siftedOver_card_le_brun_exp {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : �
       ≤ y * Real.exp (z * k * ∑ q ∈ T, (q : ℝ)⁻¹) / z ^ (2 * t) := by
     rw [mul_div_assoc]
     exact mul_le_mul_of_nonneg_left htail' (Nat.cast_nonneg _)
-  exact add_le_add_right (add_le_add_left h2 _) _
+  linarith [h2]
 
 /-- **Brun bound for `siftedSet`** over the full prime set `S` of `(p, w]`. -/
 theorem siftedSet_card_le_brun {p : ℕ} (hp : p.Prime) (y k w t : ℕ) :

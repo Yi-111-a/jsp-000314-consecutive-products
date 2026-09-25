@@ -150,20 +150,22 @@ theorem midBandSum_le (x Z : ℕ) :
           push_cast
           ring
       _ ≤ (2 * p : ℝ) * (2 * ((2 * x : ℝ) / (p : ℝ) ^ 2)) := by
-          apply mul_le_mul_of_nonneg_left _ (by positivity)
-          apply mul_le_mul_of_nonneg_left _ (by norm_num)
-          exact Nat.cast_div_le
+          have hcd : ((2 * x / p ^ 2 : ℕ) : ℝ) ≤
+              ((2 * x : ℕ) : ℝ) / ((p ^ 2 : ℕ) : ℝ) := Nat.cast_div_le
+          simp only [Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat] at hcd
+          exact mul_le_mul_of_nonneg_left
+            (mul_le_mul_of_nonneg_left hcd (by norm_num)) (by positivity)
       _ = 8 * (x : ℝ) / p := by
           have hp0' : (p : ℝ) ≠ 0 := hp0.ne'
           field_simp
           ring
-  calc ((∑ p ∈ (Nat.primesLE (Nat.sqrt (2 * x))).filter (fun p => Z < p),
+  calc (∑ p ∈ (Nat.primesLE (Nat.sqrt (2 * x))).filter (fun p => Z < p),
           ∑ k ∈ Finset.Icc 1 (2 * p),
-            (rightRunCount x p k + leftRunCount x p k)) : ℕ) : ℝ
+            ((rightRunCount x p k : ℝ) + leftRunCount x p k))
       = ∑ p ∈ (Nat.primesLE (Nat.sqrt (2 * x))).filter (fun p => Z < p),
           ((∑ k ∈ Finset.Icc 1 (2 * p),
-            (rightRunCount x p k + leftRunCount x p k) : ℕ) : ℝ) :=
-        Nat.cast_sum _ _
+            (rightRunCount x p k + leftRunCount x p k) : ℕ) : ℝ) := by
+        simp only [Nat.cast_sum, Nat.cast_add]
     _ ≤ ∑ p ∈ (Nat.primesLE (Nat.sqrt (2 * x))).filter (fun p => Z < p),
           (8 * (x : ℝ) / p) :=
         Finset.sum_le_sum fun p hp => key p hp
@@ -226,7 +228,7 @@ theorem midBandSum_le_card_div (x Z : ℕ) :
           / (Z + 1) := by
         rw [Finset.sum_const, nsmul_eq_mul, mul_one_div]
     _ ≤ ((Nat.sqrt (2 * x) : ℝ) + 1) / (Z + 1) := by
-        rw [div_le_div_right (by positivity : (0 : ℝ) < Z + 1)]
-        exact hcard
+        simp only [div_eq_mul_inv]
+        exact mul_le_mul_of_nonneg_right hcard (by positivity)
 
 end JSP314
