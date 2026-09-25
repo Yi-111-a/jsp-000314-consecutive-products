@@ -95,18 +95,21 @@ modulo every `q ∣ M`. -/
 theorem dvd_sq_mul_sub_iff {p q M r j : ℕ} (hqM : q ∣ M) (hr : r ≤ M)
     (hj : j ≤ p ^ 2 * r) :
     q ∣ p ^ 2 * (M - r) + j ↔ q ∣ p ^ 2 * r - j := by
-  have hM : (M : ZMod q) = 0 := ZMod.natCast_eq_zero_iff.mpr hqM
-  have hMr : ((M - r : ℕ) : ZMod q) = (M : ZMod q) - r := Nat.cast_sub hr
-  rw [← ZMod.natCast_eq_zero_iff, ← ZMod.natCast_eq_zero_iff,
-    Nat.cast_add, Nat.cast_mul, Nat.cast_pow, hMr, hM, zero_sub,
-    Nat.cast_sub hj, Nat.cast_mul, Nat.cast_pow, mul_neg, neg_add_eq_zero,
-    sub_eq_zero]
+  have hsub : p ^ 2 * (M - r) = p ^ 2 * M - p ^ 2 * r :=
+    Nat.mul_sub_left_distrib _ _ _
+  have hle : p ^ 2 * r ≤ p ^ 2 * M := mul_le_mul_left' hr _
+  have hsum : p ^ 2 * (M - r) + j + (p ^ 2 * r - j) = p ^ 2 * M := by
+    rw [hsub]; omega
+  have hqAB : q ∣ p ^ 2 * (M - r) + j + (p ^ 2 * r - j) := by
+    rw [hsum]; exact dvd_mul_of_dvd_right hqM _
+  exact ⟨fun hA => (Nat.dvd_add_iff_right hA).mpr hqAB,
+         fun hB => (Nat.dvd_add_iff_left hB).mpr hqAB⟩
 
 /-- **Reflection bound for the left sifted set.**  With `T` the primes of
 `(p, w]` and `P = ∏_{q∈T} q`, `M = (y/P + 1)·P` (`≤ y + P`), the map
 `r ↦ M - r` sends left-sifted `r` with `k < p²r` to right-sifted `s ∈
 [1, M]`, and the remaining `r` satisfy `r ≤ k`. -/
-theorem runSiftedLeft_card_le_siftedOver_add (y p k w : ℕ) :
+theorem runSiftedLeft_card_le_siftedOver_add (hp : 0 < p) (y p k w : ℕ) :
     (runSiftedLeft y p k w).card ≤
       (siftedOver ((y / ∏ q ∈ (Finset.Ioc p w).filter Nat.Prime, q + 1)
           * ∏ q ∈ (Finset.Ioc p w).filter Nat.Prime, q) p k
@@ -119,8 +122,10 @@ theorem runSiftedLeft_card_le_siftedOver_add (y p k w : ℕ) :
     (Finset.mem_filter.mp hq).2.pos
   -- `M > y` since `y % P < P`.
   have hyM : y < M := by
-    have h1 : y = (y / P) * P + y % P := (Nat.div_add_mod y P).symm
+    have h1 : y = P * (y / P) + y % P := (Nat.div_add_mod y P).symm
     have h2 : y % P < P := Nat.mod_lt y hP0
+    have hM2 : M = P * (y / P) + P := by
+      rw [hM, add_mul, one_mul, Nat.mul_comm (y / P) P]
     omega
   -- split `runSiftedLeft` into `k < p²r` (reflected) and `p²r ≤ k`
   -- (exceptional, `≤ k` of them).
@@ -128,23 +133,15 @@ theorem runSiftedLeft_card_le_siftedOver_add (y p k w : ℕ) :
     (p := fun r => k < p ^ 2 * r) (s := runSiftedLeft y p k w)
   have hex : ((runSiftedLeft y p k w).filter (fun r => ¬ k < p ^ 2 * r)).card
       ≤ k := by
-    rcases Nat.eq_zero_or_pos p with rfl | hp0
-    · -- `p = 0`: bound by `y ≤ M ≤ M + k`.
-      refine le_trans ?_ (Nat.le_add_right _ _)
-      have hsub : (runSiftedLeft y 0 k w).filter (fun r => ¬ k < 0 ^ 2 * r)
-          ⊆ Finset.Icc 1 y := Finset.filter_subset _ _ |>.trans
-        (Finset.filter_subset _ _)
-      exact (Finset.card_le_card hsub).trans (by
-        rw [Nat.card_Icc]; omega)
-    · have hsub : (runSiftedLeft y p k w).filter (fun r => ¬ k < p ^ 2 * r)
-          ⊆ Finset.Icc 1 k := by
-        intro r hr
-        rw [Finset.mem_filter, mem_runSiftedLeft] at hr
-        rw [Finset.mem_Icc] at hr ⊢
-        have : r ≤ k := le_trans (Nat.le_mul_of_pos_left r hp0)
-          (by omega : p ^ 2 * r ≤ k)
-        exact ⟨by omega, this⟩
-      exact (Finset.card_le_card hsub).trans (by rw [Nat.card_Icc])
+    have hsub : (runSiftedLeft y p k w).filter (fun r => ¬ k < p ^ 2 * r)
+        ⊆ Finset.Icc 1 k := by
+      intro r hr
+      rw [Finset.mem_filter, mem_runSiftedLeft] at hr
+      obtain ⟨⟨hrI, -⟩, hle⟩ := hr
+      rw [Finset.mem_Icc] at hrI ⊢
+      exact ⟨hrI.1, (Nat.le_mul_of_pos_left r (pow_pos hp 2)).trans
+        (le_of_not_gt hle)⟩
+    exact (Finset.card_le_card hsub).trans (by rw [Nat.card_Icc]; omega)
   have hmain : ((runSiftedLeft y p k w).filter (fun r => k < p ^ 2 * r)).card
       ≤ (siftedOver M p k T).card := by
     apply Finset.card_le_card_of_injOn (fun r => M - r)
@@ -153,16 +150,17 @@ theorem runSiftedLeft_card_le_siftedOver_add (y p k w : ℕ) :
       obtain ⟨hrm, hkr⟩ := hr
       rw [mem_runSiftedLeft] at hrm
       obtain ⟨hr1, hcond⟩ := Finset.mem_Icc.mp hrm.1, hrm.2
-      rw [siftedOver, Finset.mem_filter]
-      refine ⟨Finset.mem_Icc.mpr ⟨by omega, Nat.sub_le _ _⟩, ?_⟩
+      show M - r ∈ siftedOver M p k T
+      simp only [siftedOver, Finset.mem_coe, Finset.mem_filter, Finset.mem_Icc]
+      refine ⟨⟨by omega, Nat.sub_le _ _⟩, ?_⟩
       intro q hq j hj
-      have hqP : q ∣ P := Finset.dvd_prod_of_mem _ hq
-      have hqM : q ∣ M := hqP.trans (dvd_mul_left _ _)
+      have hqP : q ∣ P := by rw [hP]; exact Finset.dvd_prod_of_mem _ hq
+      have hqM : q ∣ M := by rw [hM]; exact hqP.trans (dvd_mul_left _ _)
       have hjr : j ≤ p ^ 2 * r := by
         have := (Finset.mem_Icc.mp hj).2
         omega
-      rw [dvd_sq_mul_sub_iff hqM (le_trans hrm.1.2 hyM.le) hjr]
-      exact hrm.2 q hq j hj (by omega)
+      rw [dvd_sq_mul_sub_iff hqM (le_trans hr1.2 hyM.le) hjr]
+      exact hcond q (by rw [← hT]; exact hq) j hj (by omega)
     · intro a ha b hb hab
       have haM : a ≤ M := by
         have := (Finset.mem_filter.mp (Finset.mem_coe.mp ha)).1
@@ -192,7 +190,7 @@ theorem leftRunCount_le_brun {p : ℕ} (hp : p.Prime) (x k w t : ℕ) :
         + (1 + ((Finset.Ioc p w).filter Nat.Prime).card * k : ℝ) ^ (2 * t)
         + k := by
   have hle := (leftRunCount_le_runSiftedLeft hp).trans
-    (runSiftedLeft_card_le_siftedOver_add (2 * x / p ^ 2) p k w)
+    (runSiftedLeft_card_le_siftedOver_add hp.pos (2 * x / p ^ 2) p k w)
   have hbrun := siftedOver_card_le_brun hp
     ((2 * x / p ^ 2 / ∏ q ∈ (Finset.Ioc p w).filter Nat.Prime, q + 1)
       * ∏ q ∈ (Finset.Ioc p w).filter Nat.Prime, q) k t
@@ -245,38 +243,34 @@ theorem prod_one_sub_min_le_exp (k : ℕ) (T : Finset ℕ) :
   have hrest : ∏ q ∈ T.filter (fun q => ¬ k < q), (1 - ((min k q : ℕ) : ℝ) / q)
       ≤ 1 :=
     Finset.prod_le_one₀ (fun q _ => (h01 q).1) (fun q _ => (h01 q).2)
+  have hnn : ∀ q ∈ S, (0:ℝ) ≤ 1 - (k : ℝ) / q := by
+    intro q hq
+    rw [hS, Finset.mem_filter] at hq
+    have hq1 : (0:ℝ) < q := Nat.cast_pos.mpr (by omega)
+    rw [sub_nonneg, div_le_one hq1]
+    exact Nat.cast_le.mpr hq.2.le
+  have hterm : ∀ q ∈ S, (1 - (k : ℝ) / q)
+      ≤ Real.exp (-(k : ℝ) * (q : ℝ)⁻¹) := by
+    intro q hq
+    calc (1 - (k : ℝ) / q)
+        = -(k : ℝ) * (q : ℝ)⁻¹ + 1 := by ring
+      _ ≤ Real.exp (-(k : ℝ) * (q : ℝ)⁻¹) :=
+          Real.add_one_le_exp _
   have hmain : ∏ q ∈ S, (1 - (k : ℝ) / q)
       ≤ Real.exp (-(k : ℝ) * ∑ q ∈ S, (q : ℝ)⁻¹) := by
-    have hterm : ∀ q ∈ S, (1 - (k : ℝ) / q)
-        ≤ Real.exp (-(k : ℝ) * (q : ℝ)⁻¹) := by
-      intro q hq
-      rw [hS, Finset.mem_filter] at hq
-      have hneg : -(k : ℝ) / q = -(k : ℝ) * (q : ℝ)⁻¹ := by
-        rw [neg_div, mul_inv]
-      calc (1 - (k : ℝ) / q)
-          = 1 + -(k : ℝ) * (q : ℝ)⁻¹ := by rw [hneg]; ring
-        _ ≤ Real.exp (-(k : ℝ) * (q : ℝ)⁻¹) :=
-            Real.add_one_le_exp _
-    have hnn : ∀ q ∈ S, (0:ℝ) ≤ 1 - (k : ℝ) / q := by
-      intro q hq
-      rw [hS, Finset.mem_filter] at hq
-      have hq1 : (0:ℝ) < q := Nat.cast_pos.mpr (by omega)
-      rw [sub_nonneg, div_le_one hq1]
-      exact Nat.cast_le.mpr hq.2.le
     calc ∏ q ∈ S, (1 - (k : ℝ) / q)
         ≤ ∏ q ∈ S, Real.exp (-(k : ℝ) * (q : ℝ)⁻¹) :=
-          Finset.prod_le_prod hnn hterm
+          Finset.prod_le_prod₀ hnn hterm
       _ = Real.exp (∑ q ∈ S, -(k : ℝ) * (q : ℝ)⁻¹) := by
           rw [← Real.exp_sum]
       _ = Real.exp (-(k : ℝ) * ∑ q ∈ S, (q : ℝ)⁻¹) := by
-          rw [← Finset.sum_neg_distrib]
-          simp [Finset.mul_sum, mul_comm]
+          rw [← Finset.mul_sum]
   rw [hsplit, hprodS]
   calc (∏ q ∈ S, (1 - (k : ℝ) / q))
         * ∏ q ∈ T.filter (fun q => ¬ k < q), (1 - ((min k q : ℕ) : ℝ) / q)
       ≤ (∏ q ∈ S, (1 - (k : ℝ) / q)) * 1 :=
         mul_le_mul_of_nonneg_left hrest
-          (Finset.prod_nonneg fun q _ => hnn q _)
+          (Finset.prod_nonneg fun q hq => hnn q hq)
     _ = ∏ q ∈ S, (1 - (k : ℝ) / q) := mul_one _
     _ ≤ Real.exp (-(k : ℝ) * ∑ q ∈ S, (q : ℝ)⁻¹) := hmain
 
