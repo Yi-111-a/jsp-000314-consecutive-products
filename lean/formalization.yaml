@@ -1,0 +1,17 @@
+jsp_id: JSP-000314
+title: "Bad intervals of consecutive integers (Erdos-Graham / Tao Ta26c)"
+headline_theorems:
+  - bad_interval_count_asymptotic
+status: in_progress
+build:
+  system: lake
+  toolchain: leanprover/lean4:v4.34.0
+  mathlib: v4.34.0
+  command: "export PATH=\"$HOME/.elan/bin:$PATH\"; lake build"
+operators:
+  - Yi-111-a
+  - "Cognition Devin (SWE-2)"
+attribution: ATTRIBUTION.md
+notes: >
+  Full Ta26c asymptotic B(x) = (1 + O((log x)^{-1+o(1)})) * S(x).
+  The analytic core badNonSingleton_interval_bound is the deep input.

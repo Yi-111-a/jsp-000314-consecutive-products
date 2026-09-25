@@ -338,7 +338,7 @@ theorem card_Icc_bad_ge {p k y d : ℕ} (hd : Squarefree d)
           rcases eq_or_ne b 0 with hb0 | hb0
           · simp only [hg, hb0, ite_true]
             rw [show i * d + d = (i + 1) * d from (add_one_mul i d).symm,
-              Nat.mul_mod_left, hb0]
+              Nat.mul_mod_left]
           · simp only [hg, hb0, ite_false]
             rw [add_comm (i * d) b, Nat.add_mul_mod_self_right,
               Nat.mod_eq_of_lt hbd]
@@ -908,7 +908,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
   refine hbound.trans ?_
   rw [mul_sub]
   have ht0 : 0 ≤ y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q)
-      - y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q) := sub_self _ ▸ le_refl _
+      - y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q) := by simp
   have hmain_nn : 0 ≤ (y : ℝ) := Nat.cast_nonneg _
   calc y * ∏ q ∈ T, (1 - ((min k q : ℕ) : ℝ) / q)
         - y * ∑ s ∈ T.powerset with 2 * t < s.card,
@@ -929,7 +929,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
                   (-1 : ℝ) ^ s.card * ∏ q ∈ s, ((min k q : ℕ) : ℝ) / q
               ≤ y * |∑ s ∈ T.powerset with 2 * t < s.card,
                   (-1 : ℝ) ^ s.card * ∏ q ∈ s, ((min k q : ℕ) : ℝ) / q| := by
-                rw [← mul_neg]
+                rw [neg_mul, ← mul_neg]
                 apply mul_le_mul_of_nonneg_left _ hmain_nn
                 exact neg_le_abs _
             _ ≤ y * ∑ s ∈ T.powerset with 2 * t < s.card,
@@ -962,9 +962,12 @@ theorem siftedOver_card_le_brun_exp {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : �
     rw [le_div_iff₀ (pow_pos hzpos _), mul_comm]
     exact htail
   refine hmain.trans ?_
-  refine add_le_add_right (add_le_add_left ?_ _) _
-  rw [← mul_div_assoc]
-  exact mul_le_mul_of_nonneg_left htail' (Nat.cast_nonneg _)
+  have h2 : (y : ℝ) * ∑ s ∈ T.powerset with 2 * t < s.card,
+        ∏ q ∈ s, (k : ℝ) / q
+      ≤ y * Real.exp (z * k * ∑ q ∈ T, (q : ℝ)⁻¹) / z ^ (2 * t) := by
+    rw [mul_div_assoc]
+    exact mul_le_mul_of_nonneg_left htail' (Nat.cast_nonneg _)
+  exact add_le_add_right (add_le_add_left h2 _) _
 
 /-- **Brun bound for `siftedSet`** over the full prime set `S` of `(p, w]`. -/
 theorem siftedSet_card_le_brun {p : ℕ} (hp : p.Prime) (y k w t : ℕ) :
