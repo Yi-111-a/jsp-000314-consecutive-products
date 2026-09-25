@@ -333,14 +333,14 @@ theorem card_Icc_bad_ge {p k y d : ℕ} (hd : Squarefree d)
           _ ≤ y := h1.trans h2
       · intro q hq
         obtain ⟨j, hj, hdvd⟩ := hbbad q hq
-        refine ⟨j, hj, ?_⟩
+        refine ⟨j, Finset.mem_Icc.mp hj, ?_⟩
         have hxm : (i * d + g b) % d = b := by
           rcases eq_or_ne b 0 with hb0 | hb0
           · simp only [hg, hb0, ite_true]
             rw [show i * d + d = (i + 1) * d from (add_one_mul i d).symm,
-              Nat.mul_mod_right, hb0]
+              Nat.mul_mod_left, hb0]
           · simp only [hg, hb0, ite_false]
-            rw [add_comm (i * d) b, Nat.add_mul_mod_self_left,
+            rw [add_comm (i * d) b, Nat.add_mul_mod_self_right,
               Nat.mod_eq_of_lt hbd]
         rw [dvd_sq_mul_add_iff_dvd_mod (Nat.dvd_of_mem_primeFactors hq), hxm]
         exact hdvd
@@ -693,7 +693,7 @@ theorem siftedOver_card_le_brun {p : ℕ} (hp : p.Prime) (y k : ℕ) (t : ℕ)
                 - (y : ℝ) / d * ∏ q ∈ d.primeFactors,
                     ((min k q : ℕ) : ℝ)) := by ring
     rw [heq]
-    apply add_le_add_left
+    apply add_le_add_right
     calc (brunLambda P t d : ℝ)
           * ((((Finset.Icc 1 y).filter fun r =>
                 d ∣ Nprod p k r).card : ℝ)

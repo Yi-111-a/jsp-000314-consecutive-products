@@ -90,7 +90,7 @@ theorem rightRunWitness_one_div_mem {x p m : ℕ} (hp : Nat.Prime p)
   rw [mem_rightRunWitness] at hm
   obtain ⟨hm2x, hdvd, hlpf, hsmooth⟩ := hm
   have hm1 : 1 ≤ m := witness_pos hp hdvd hlpf
-  have hp2 : 0 < p ^ 2 := Nat.pow_pos hp.pos 2
+  have hp2 : 0 < p ^ 2 := Nat.pow_pos hp.pos
   rw [Finset.mem_filter]
   refine ⟨Finset.mem_Icc.mpr
       ⟨Nat.div_pos (Nat.le_of_dvd hm1 hdvd) hp2, Nat.div_le_div_right hm2x⟩,
@@ -123,7 +123,7 @@ theorem leftRunWitness_one_div_pred_mem {x p m : ℕ} (hp : Nat.Prime p)
   rw [mem_leftRunWitness] at hm
   obtain ⟨hm2x, hdvd, hlpf, hsmooth⟩ := hm
   have hm1 : 1 ≤ m := witness_pos hp hdvd hlpf
-  have hp2 : 0 < p ^ 2 := Nat.pow_pos hp.pos 2
+  have hp2 : 0 < p ^ 2 := Nat.pow_pos hp.pos
   have hr1 : 1 ≤ m / p ^ 2 := Nat.div_pos (Nat.le_of_dvd hm1 hdvd) hp2
   rw [Finset.mem_filter]
   refine ⟨Finset.mem_Icc.mpr ⟨Nat.zero_le _,
@@ -149,19 +149,21 @@ theorem leftRunCount_one_le_apSmoothParamCount {x p : ℕ} (hp : Nat.Prime p) :
   · intro a ha b hb hab
     have hwa := mem_leftRunWitness.mp (Finset.mem_coe.mp ha)
     have hwb := mem_leftRunWitness.mp (Finset.mem_coe.mp hb)
-    have hp2 : 0 < p ^ 2 := Nat.pow_pos hp.pos 2
+    have hp2 : 0 < p ^ 2 := Nat.pow_pos hp.pos
     have ha1 : 1 ≤ a / p ^ 2 :=
       Nat.div_pos (Nat.le_of_dvd (witness_pos hp hwa.2.1 hwa.2.2.1) hwa.2.1) hp2
     have hb1 : 1 ≤ b / p ^ 2 :=
       Nat.div_pos (Nat.le_of_dvd (witness_pos hp hwb.2.1 hwb.2.2.1) hwb.2.1) hp2
-    have hab' : a / p ^ 2 = b / p ^ 2 := by omega
+    have hab' : a / p ^ 2 = b / p ^ 2 := by
+      have h2 : a / p ^ 2 - 1 = b / p ^ 2 - 1 := hab
+      omega
     exact div_injOn hp.pos hwa.2.1 hwb.2.1 hab'
 
 /-! ### Task 2: the Erdős bound at our parameters -/
 
 /-- **Erdős bound (right), multiplicative form.** -/
 theorem rightRunCount_one_mul_log_le {x p : ℕ} (hp : Nat.Prime p) :
-    (rightRunCount x p 1 : ℝ) * Real.log ↑(p ^ 2 + 1) ≤
+    (rightRunCount x p 1 : ℝ) * Real.log ((p ^ 2 + 1 : ℕ) : ℝ) ≤
       ((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
         + (Nat.log 2 (2 * x + 1) : ℝ) * (p * Real.log 4) := by
   have hE := apSmoothParamCount_mul_log_le_explicit (lo := 1)
@@ -170,7 +172,7 @@ theorem rightRunCount_one_mul_log_le {x p : ℕ} (hp : Nat.Prime p) :
   have hcnt : (rightRunCount x p 1 : ℝ)
       ≤ (apSmoothParamCount 1 (2 * x / p ^ 2) (p ^ 2) 1 p : ℝ) :=
     Nat.cast_le.mpr (rightRunCount_one_le_apSmoothParamCount hp)
-  have hlognn : 0 ≤ Real.log ↑(p ^ 2 * 1 + 1) := Real.log_natCast_nonneg _
+  have hlognn : 0 ≤ Real.log ((p ^ 2 * 1 + 1 : ℕ) : ℝ) := Real.log_natCast_nonneg _
   have hsub : (((2 * x / p ^ 2) - 1 : ℕ) : ℝ) ≤ ((2 * x / p ^ 2 : ℕ) : ℝ) :=
     Nat.cast_le.mpr (Nat.sub_le _ _)
   have hlogbound : (Nat.log 2 (p ^ 2 * (2 * x / p ^ 2) + 1) : ℝ)
@@ -184,12 +186,12 @@ theorem rightRunCount_one_mul_log_le {x p : ℕ} (hp : Nat.Prime p) :
     have := Real.log_natCast_nonneg p; linarith
   have hB : 0 ≤ (p : ℝ) * Real.log 4 :=
     mul_nonneg (Nat.cast_nonneg _) (Real.log_natCast_nonneg _)
-  have key : (rightRunCount x p 1 : ℝ) * Real.log ↑(p ^ 2 * 1 + 1)
+  have key : (rightRunCount x p 1 : ℝ) * Real.log ((p ^ 2 * 1 + 1 : ℕ) : ℝ)
       ≤ ((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
         + (Nat.log 2 (2 * x + 1) : ℝ) * (p * Real.log 4) :=
-    calc (rightRunCount x p 1 : ℝ) * Real.log ↑(p ^ 2 * 1 + 1)
+    calc (rightRunCount x p 1 : ℝ) * Real.log ((p ^ 2 * 1 + 1 : ℕ) : ℝ)
         ≤ (apSmoothParamCount 1 (2 * x / p ^ 2) (p ^ 2) 1 p : ℝ)
-            * Real.log ↑(p ^ 2 * 1 + 1) :=
+            * Real.log ((p ^ 2 * 1 + 1 : ℕ) : ℝ) :=
           mul_le_mul_of_nonneg_right hcnt hlognn
       _ ≤ ((2 * x / p ^ 2 - 1 : ℕ) : ℝ) * (2 * Real.log p + 11)
             + (Nat.log 2 (p ^ 2 * (2 * x / p ^ 2) + 1) : ℝ)
@@ -205,7 +207,7 @@ theorem rightRunCount_one_mul_log_le {x p : ℕ} (hp : Nat.Prime p) :
 
 /-- **Erdős bound (left), multiplicative form.** -/
 theorem leftRunCount_one_mul_log_le {x p : ℕ} (hp : Nat.Prime p) :
-    (leftRunCount x p 1 : ℝ) * Real.log ↑(p ^ 2 - 1) ≤
+    (leftRunCount x p 1 : ℝ) * Real.log ((p ^ 2 - 1 : ℕ) : ℝ) ≤
       ((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
         + (Nat.log 2 (2 * x + p ^ 2) : ℝ) * (p * Real.log 4) := by
   have hp2 : 1 ≤ p ^ 2 := Nat.one_le_pow 2 p hp.pos
@@ -216,7 +218,7 @@ theorem leftRunCount_one_mul_log_le {x p : ℕ} (hp : Nat.Prime p) :
   have hcnt : (leftRunCount x p 1 : ℝ)
       ≤ (apSmoothParamCount 0 (2 * x / p ^ 2) (p ^ 2) (p ^ 2 - 1) p : ℝ) :=
     Nat.cast_le.mpr (leftRunCount_one_le_apSmoothParamCount hp)
-  have hlognn : 0 ≤ Real.log ↑(p ^ 2 * 0 + (p ^ 2 - 1)) :=
+  have hlognn : 0 ≤ Real.log ((p ^ 2 * 0 + (p ^ 2 - 1) : ℕ) : ℝ) :=
     Real.log_natCast_nonneg _
   have hsub : (((2 * x / p ^ 2) - 0 : ℕ) : ℝ) ≤ ((2 * x / p ^ 2 : ℕ) : ℝ) :=
     Nat.cast_le.mpr (Nat.sub_le _ _)
@@ -231,12 +233,12 @@ theorem leftRunCount_one_mul_log_le {x p : ℕ} (hp : Nat.Prime p) :
     have := Real.log_natCast_nonneg p; linarith
   have hB : 0 ≤ (p : ℝ) * Real.log 4 :=
     mul_nonneg (Nat.cast_nonneg _) (Real.log_natCast_nonneg _)
-  have key : (leftRunCount x p 1 : ℝ) * Real.log ↑(p ^ 2 * 0 + (p ^ 2 - 1))
+  have key : (leftRunCount x p 1 : ℝ) * Real.log ((p ^ 2 * 0 + (p ^ 2 - 1) : ℕ) : ℝ)
       ≤ ((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
         + (Nat.log 2 (2 * x + p ^ 2) : ℝ) * (p * Real.log 4) :=
-    calc (leftRunCount x p 1 : ℝ) * Real.log ↑(p ^ 2 * 0 + (p ^ 2 - 1))
+    calc (leftRunCount x p 1 : ℝ) * Real.log ((p ^ 2 * 0 + (p ^ 2 - 1) : ℕ) : ℝ)
         ≤ (apSmoothParamCount 0 (2 * x / p ^ 2) (p ^ 2) (p ^ 2 - 1) p : ℝ)
-            * Real.log ↑(p ^ 2 * 0 + (p ^ 2 - 1)) :=
+            * Real.log ((p ^ 2 * 0 + (p ^ 2 - 1) : ℕ) : ℝ) :=
           mul_le_mul_of_nonneg_right hcnt hlognn
       _ ≤ ((2 * x / p ^ 2 - 0 : ℕ) : ℝ) * (2 * Real.log p + 11)
             + (Nat.log 2 (p ^ 2 * (2 * x / p ^ 2) + (p ^ 2 - 1)) : ℝ)
@@ -257,9 +259,9 @@ theorem rightRunCount_one_le_erdos {x p : ℕ} (hp : Nat.Prime p) :
     (rightRunCount x p 1 : ℝ) ≤
       (((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
         + (Nat.log 2 (2 * x + 1) : ℝ) * (p * Real.log 4))
-          / Real.log ↑(p ^ 2 + 1) := by
+          / Real.log ((p ^ 2 + 1 : ℕ) : ℝ) := by
   have h := rightRunCount_one_mul_log_le hp
-  have hpos : 0 < Real.log ↑(p ^ 2 + 1) := by
+  have hpos : 0 < Real.log ((p ^ 2 + 1 : ℕ) : ℝ) := by
     apply Real.log_pos
     have h4 : 1 < p ^ 2 + 1 := by
       have := hp.two_le
@@ -274,9 +276,9 @@ theorem leftRunCount_one_le_erdos {x p : ℕ} (hp : Nat.Prime p) :
     (leftRunCount x p 1 : ℝ) ≤
       (((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
         + (Nat.log 2 (2 * x + p ^ 2) : ℝ) * (p * Real.log 4))
-          / Real.log ↑(p ^ 2 - 1) := by
+          / Real.log ((p ^ 2 - 1 : ℕ) : ℝ) := by
   have h := leftRunCount_one_mul_log_le hp
-  have hpos : 0 < Real.log ↑(p ^ 2 - 1) := by
+  have hpos : 0 < Real.log ((p ^ 2 - 1 : ℕ) : ℝ) := by
     apply Real.log_pos
     have h3 : 1 < p ^ 2 - 1 := by
       have := hp.two_le
@@ -303,7 +305,7 @@ theorem rightRunCount_le_div {x p k : ℕ} (hp : Nat.Prime p) :
     obtain ⟨hm2x, hdvd, hlpf, -⟩ := mem_rightRunWitness.mp hm
     have hm1 : 1 ≤ m := witness_pos hp hdvd hlpf
     exact Finset.mem_Icc.mpr
-      ⟨Nat.div_pos (Nat.le_of_dvd hm1 hdvd) (Nat.pow_pos hp.pos 2),
+      ⟨Nat.div_pos (Nat.le_of_dvd hm1 hdvd) (Nat.pow_pos hp.pos),
         Nat.div_le_div_right hm2x⟩
   · intro a ha b hb hab
     exact div_injOn hp.pos
@@ -324,7 +326,7 @@ theorem leftRunCount_le_div {x p k : ℕ} (hp : Nat.Prime p) :
     obtain ⟨hm2x, hdvd, hlpf, -⟩ := mem_leftRunWitness.mp hm
     have hm1 : 1 ≤ m := witness_pos hp hdvd hlpf
     exact Finset.mem_Icc.mpr
-      ⟨Nat.div_pos (Nat.le_of_dvd hm1 hdvd) (Nat.pow_pos hp.pos 2),
+      ⟨Nat.div_pos (Nat.le_of_dvd hm1 hdvd) (Nat.pow_pos hp.pos),
         Nat.div_le_div_right hm2x⟩
   · intro a ha b hb hab
     exact div_injOn hp.pos
@@ -574,16 +576,16 @@ theorem runCountSum_eventually_le :
     calc 8 * x * (1 + Real.log (Nat.sqrt (2 * x)))
         ≤ 8 * x * (1 + Real.log (2 * x) / 2) :=
           mul_le_mul_of_nonneg_left
-            (add_le_add_left hslog 1) (by positivity)
+            (add_le_add_right hslog 1) (by positivity)
       _ = 8 * x + 4 * x * Real.log ((2 * x : ℕ) : ℝ) := by ring
       _ = 8 * x + 4 * x * (Real.log 2 + Real.log x) := by rw [hlog2x]
       _ ≤ 8 * x + 4 * x * (1 + Real.log x) :=
           mul_le_mul_of_nonneg_left
-            (add_le_add_left hlog2.le _ |>.trans' (le_refl _)
+            (add_le_add_right hlog2.le _ |>.trans' (le_refl _)
             ) (by positivity) -- fallback below if needed
       _ = 4 * x * Real.log x + 12 * x := by ring
       _ ≤ 4 * x * Real.log x + x * Real.log x :=
-          add_le_add_left (mul_le_mul_of_nonneg_right hL hxR.le) _
+          add_le_add_right (mul_le_mul_of_nonneg_right hL hxR.le) _
       _ = 5 * x * Real.log x := by ring
   exact h.trans key
 
@@ -655,11 +657,11 @@ theorem runCount_one_sum_le_erdos_term {x p : ℕ} (hp : Nat.Prime p)
     rw [Nat.cast_sub (by
       have h4 : 4 ≤ p ^ 2 := Nat.pow_le_pow_left hp.two_le 2
       omega), Nat.cast_pow]
-  have hden1 : Real.log p ≤ Real.log ↑(p ^ 2 + 1) := by
+  have hden1 : Real.log p ≤ Real.log ((p ^ 2 + 1 : ℕ) : ℝ) := by
     rw [hcast1]
     apply Real.log_le_log (by linarith)
     nlinarith
-  have hden2 : Real.log p ≤ Real.log ↑(p ^ 2 - 1) := by
+  have hden2 : Real.log p ≤ Real.log ((p ^ 2 - 1 : ℕ) : ℝ) := by
     rw [hcast2]
     apply Real.log_le_log (by linarith)
     nlinarith
@@ -668,12 +670,12 @@ theorem runCount_one_sum_le_erdos_term {x p : ℕ} (hp : Nat.Prime p)
       + (Nat.log 2 (2 * x + 1) : ℝ) * (p * Real.log 4)
       ≤ ((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
         + (Nat.log 2 (4 * x) : ℝ) * (p * Real.log 4) :=
-    add_le_add_left (mul_le_mul_of_nonneg_right hlog1 hB) _
+    add_le_add_right (mul_le_mul_of_nonneg_right hlog1 hB) _
   have hN2 : ((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
       + (Nat.log 2 (2 * x + p ^ 2) : ℝ) * (p * Real.log 4)
       ≤ ((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
         + (Nat.log 2 (4 * x) : ℝ) * (p * Real.log 4) :=
-    add_le_add_left (mul_le_mul_of_nonneg_right hlog2 hB) _
+    add_le_add_right (mul_le_mul_of_nonneg_right hlog2 hB) _
   have hX0 : (0 : ℝ) ≤ ((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
       + (Nat.log 2 (4 * x) : ℝ) * (p * Real.log 4) :=
     add_nonneg (mul_nonneg hy hA) (mul_nonneg (Nat.cast_nonneg _) hB)
@@ -686,10 +688,10 @@ theorem runCount_one_sum_le_erdos_term {x p : ℕ} (hp : Nat.Prime p)
   calc (rightRunCount x p 1 : ℝ) + (leftRunCount x p 1 : ℝ)
       ≤ (((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
           + (Nat.log 2 (2 * x + 1) : ℝ) * (p * Real.log 4))
-            / Real.log ↑(p ^ 2 + 1)
+            / Real.log ((p ^ 2 + 1 : ℕ) : ℝ)
         + (((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
           + (Nat.log 2 (2 * x + p ^ 2) : ℝ) * (p * Real.log 4))
-            / Real.log ↑(p ^ 2 - 1) := add_le_add hR hL
+            / Real.log ((p ^ 2 - 1 : ℕ) : ℝ) := add_le_add hR hL
     _ ≤ (((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
           + (Nat.log 2 (4 * x) : ℝ) * (p * Real.log 4)) / Real.log p
         + (((2 * x / p ^ 2 : ℕ) : ℝ) * (2 * Real.log p + 11)
@@ -769,7 +771,7 @@ theorem sum_one_slice_erdos_le (x : ℕ) (hx : 1 ≤ x) :
           = ((2 * x / p ^ 2 : ℕ) : ℝ) * (2 + 11 / Real.log p) := by
             field_simp; ring
         _ ≤ ((2 * x / p ^ 2 : ℕ) : ℝ) * (2 + 11 / Real.log 2) :=
-          mul_le_mul_of_nonneg_left (add_le_add_left h11 2) hy
+          mul_le_mul_of_nonneg_left (add_le_add_right h11 2) hy
     -- `B·p·log4/log p ≤ B·p·2`
     have h2 : (Nat.log 2 (4 * x) : ℝ) * (p * Real.log 4) / Real.log p
         ≤ (Nat.log 2 (4 * x) : ℝ) * (p : ℝ) * 2 := by
@@ -829,8 +831,8 @@ theorem sum_one_slice_erdos_le (x : ℕ) (hx : 1 ≤ x) :
           exact Nat.mul_le_mul_left s hpos
         rw [Nat.mul_succ]
         omega
-    have : (∑ p ∈ Nat.primesLE s, (p : ℝ)) ≤ (((s + 1) * s : ℕ) : ℝ) :=
-      Nat.cast_le.mpr h1
+    have : (∑ p ∈ Nat.primesLE s, (p : ℝ)) ≤ (((s + 1) * s : ℕ) : ℝ) := by
+      exact_mod_cast h1
     calc ∑ p ∈ Nat.primesLE s, (p : ℝ)
         ≤ ((s + 1) * s : ℕ) := this
       _ ≤ ((4 * x : ℕ) : ℝ) := Nat.cast_le.mpr h2
@@ -856,7 +858,7 @@ theorem sum_one_slice_erdos_le (x : ℕ) (hx : 1 ≤ x) :
             (mul_nonneg (by norm_num) (Nat.cast_nonneg _))
     _ = (8 + 44 / Real.log 2) * x + 16 * x * (Nat.log 2 (4 * x) : ℝ) := by ring
     _ ≤ 72 * x + 16 * x * (Nat.log 2 (4 * x) : ℝ) := by
-        apply add_le_add_right
+        apply add_le_add_left
         apply mul_le_mul_of_nonneg_right _ (Nat.cast_nonneg _)
         have h44 : (44 : ℝ) / Real.log 2 ≤ 44 / (0.6931471803 : ℝ) :=
           div_le_div_of_nonneg_left (by norm_num) hlog2lo hlog2lo.le
@@ -884,13 +886,16 @@ theorem apSmoothParamCount_le_rpow_prod {lo hi c j p : ℕ} (hj : 1 ≤ j)
     obtain ⟨hrIcc, hlp⟩ := hr
     obtain ⟨hlo, hhi⟩ := Finset.mem_Icc.mp hrIcc
     refine ⟨Finset.mem_Icc.mpr ⟨?_, ?_⟩, hlp⟩
-    · omega
+    · show 1 ≤ c * r + j
+      omega
     · have hcr : c * r ≤ c * hi := Nat.mul_le_mul_left c hhi
+      show c * r + j ≤ c * hi + j
       omega
   have hinj : Set.InjOn (fun r => c * r + j)
       ↑((Finset.Icc lo hi).filter fun r => largestPrimeFactor (c * r + j) ≤ p)
       := by
     intro a _ b _ hab
+    have h2 : c * a + j = c * b + j := hab
     have : c * a = c * b := by omega
     exact Nat.mul_left_cancel hc this
   have hcard : apSmoothParamCount lo hi c j p
@@ -912,7 +917,7 @@ theorem rightRunCount_one_le_rpow {x p : ℕ} (hp : Nat.Prime p) {σ : ℝ}
     (rightRunCount x p 1 : ℝ) ≤
       ((2 * x + 1 : ℕ) : ℝ) ^ σ *
         ∏ q ∈ Nat.primesLE p, (1 - (q : ℝ) ^ (-σ))⁻¹ := by
-  have hp2 : 0 < p ^ 2 := Nat.pow_pos hp.pos 2
+  have hp2 : 0 < p ^ 2 := Nat.pow_pos hp.pos
   have h1 := apSmoothParamCount_le_rpow_prod (lo := 1) (hi := 2 * x / p ^ 2)
     (c := p ^ 2) (j := 1) (p := p) (Nat.le_refl 1) hp2 hσ
   have hcnt : (rightRunCount x p 1 : ℝ)
@@ -931,7 +936,7 @@ theorem rightRunCount_one_le_rpow {x p : ℕ} (hp : Nat.Prime p) {σ : ℝ}
     intro q hq
     have hqp := Nat.prime_of_mem_primesLE hq
     have hqR : (2 : ℝ) ≤ (q : ℝ) := by exact_mod_cast hqp.two_le
-    have hpow : (1 : ℝ) < (q : ℝ) ^ σ := Real.one_lt_rpow hqR hσ
+    have hpow : (1 : ℝ) < (q : ℝ) ^ σ := Real.one_lt_rpow (lt_of_lt_of_le one_lt_two hqR) hσ
     have : (q : ℝ) ^ (-σ) < 1 := by
       rw [Real.rpow_neg (by linarith)]
       exact inv_lt_one_of_one_lt₀ hpow
