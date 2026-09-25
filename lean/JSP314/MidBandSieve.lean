@@ -78,7 +78,7 @@ theorem rightRunCount_one_le_div_add (x p : ℕ) (hp : p.Prime) :
             have hdm : p ^ 2 * (2 * x / p ^ 2) + 2 * x % p ^ 2 = 2 * x :=
               Nat.div_add_mod _ _
             have hmod : 2 * x % p ^ 2 < p ^ 2 := Nat.mod_lt _ hb
-            have hexp : (2 * x / p ^ 2 + 1) * p ^ 2 =
+            have hexp : p ^ 2 * (2 * x / p ^ 2 + 1) =
                 p ^ 2 * (2 * x / p ^ 2) + p ^ 2 := by ring
             rw [hexp]
             omega
